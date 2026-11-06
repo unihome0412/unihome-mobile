@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "UniHome",
+    "slug": "unihome-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "android": {
+      "package": "mx.unihome.app",
+      "versionCode": 1000000,
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF"
+      }
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
+  }
+}

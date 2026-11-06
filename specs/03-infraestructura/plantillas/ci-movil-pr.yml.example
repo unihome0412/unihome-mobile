@@ -1,0 +1,42 @@
+# PLANTILLA INACTIVA — no copiar a .github/workflows sin aprobación expresa (CM-03).
+# Valores entre <...> y los scripts npm son marcadores por definir (ADR-M001, DEC-M03/M04).
+# No contiene secretos. Los SHA deben verificarse antes de usarse.
+name: ci-movil-pr
+on:
+  pull_request:
+    branches: [develop, main]
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: ci-movil-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verificar:
+    if: ${{ false }}   # INACTIVO hasta aprobación
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<SHA_COMPLETO_A_VERIFICAR>
+      - uses: actions/setup-node@<SHA_COMPLETO_A_VERIFICAR>
+        with:
+          node-version-file: <ARCHIVO_DE_VERSION_DE_NODE>
+          cache: <GESTOR_DE_PAQUETES>
+      - name: Instalar con lockfile
+        run: <COMANDO_DE_INSTALACION_DETERMINISTA>
+      - name: Tipos
+        run: <COMANDO_DE_VERIFICACION_DE_TIPOS>
+      - name: Lint y formato
+        run: <COMANDO_DE_LINT>
+      - name: Pruebas unitarias
+        run: <COMANDO_DE_PRUEBAS_UNITARIAS>
+      - name: Pruebas de integración (API simulada)
+        run: <COMANDO_DE_PRUEBAS_DE_INTEGRACION>
+      - name: Validar configuración (sin secretos)
+        run: <SCRIPT_DE_VALIDACION_DE_CONFIGURACION>
+  seguridad:
+    if: ${{ false }}   # INACTIVO; detalle en INFM-003
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<SHA_COMPLETO_A_VERIFICAR>
+      - name: Secretos / SAST / SCA / manifiesto
+        run: <VER_INFM-003>

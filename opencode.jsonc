@@ -1,0 +1,26 @@
+{
+  // Perfil documental de solo lectura para el SDD móvil de UniHome.
+  // Formato de permisos de OpenCode V2 (arreglo ordenado de reglas; prevalece la última regla que coincide).
+  // Si se usara OpenCode V1 este archivo NO aplica: adaptarlo antes de confiar en él (ver README.md).
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "coordinador-sdd-movil",
+  "permissions": [
+    { "action": "edit", "resource": "*", "effect": "deny" },
+    { "action": "shell", "resource": "*", "effect": "deny" },
+    { "action": "subagent", "resource": "*", "effect": "deny" },
+    { "action": "subagent", "resource": "arquitecto-movil", "effect": "allow" },
+    { "action": "subagent", "resource": "auditor-sdd-movil", "effect": "allow" },
+    { "action": "subagent", "resource": "revisor-seguridad-movil", "effect": "allow" },
+    { "action": "subagent", "resource": "verificador-alineacion-backend", "effect": "allow" },
+    { "action": "skill", "resource": "*", "effect": "allow" },
+    { "action": "read", "resource": "*.env", "effect": "deny" },
+    { "action": "read", "resource": "*.env.*", "effect": "deny" },
+    { "action": "read", "resource": "*.env.example", "effect": "allow" },
+    { "action": "read", "resource": "**/keys.properties", "effect": "deny" },
+    { "action": "read", "resource": "**/local.properties", "effect": "deny" },
+    { "action": "read", "resource": "**/*.jks", "effect": "deny" },
+    { "action": "read", "resource": "**/*.keystore", "effect": "deny" },
+    { "action": "webfetch", "resource": "*", "effect": "ask" },
+    { "action": "websearch", "resource": "*", "effect": "ask" }
+  ]
+}

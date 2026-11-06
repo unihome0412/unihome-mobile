@@ -1,0 +1,43 @@
+# PLANTILLA INACTIVA — no copiar a .github/workflows sin aprobación expresa (CM-03).
+# No hay publicación automática a producción (CM-15). Nombres de secretos solamente; sin valores.
+name: cd-play
+on:
+  push:
+    branches: [develop]
+    tags: ['mobile-v*']
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  interna:
+    if: ${{ false }}   # INACTIVO; solo develop -> pista interna
+    runs-on: ubuntu-latest
+    environment: play-interno
+    steps:
+      - uses: actions/checkout@<SHA_COMPLETO_A_VERIFICAR>
+      - name: Calcular versionName y versionCode (matriz de INFM-002)
+        run: <SCRIPT_DE_VERSIONAMIENTO>
+      - name: Compilar .aab (ADR-M004)
+        run: <COMANDO_DE_COMPILACION>
+      - name: Firmar con llave de carga
+        env:
+          UPLOAD_KEYSTORE: ${{ secrets.UPLOAD_KEYSTORE }}
+        run: <COMANDO_DE_FIRMA>
+      - name: Subir a pista interna
+        env:
+          PLAY_SERVICE_ACCOUNT: ${{ secrets.PLAY_SERVICE_ACCOUNT }}
+        run: <ACCION_O_COMANDO_DE_PUBLICACION_POR_DEFINIR>
+  cerrada:
+    if: ${{ false }}   # INACTIVO; etiqueta rc -> pista cerrada con aprobación humana
+    runs-on: ubuntu-latest
+    environment: play-cerrada   # ambiente con revisores requeridos
+    steps:
+      - name: Promover el mismo artefacto/versión
+        run: <COMANDO_DE_PROMOCION>
+  produccion:
+    if: ${{ false }}   # INACTIVO; etiqueta final -> producción escalonada
+    runs-on: ubuntu-latest
+    environment: play-produccion   # revisor distinto del autor; porcentaje inicial por definir
+    steps:
+      - name: Promover a producción (escalonada)
+        run: <COMANDO_DE_PROMOCION_ESCALONADA>

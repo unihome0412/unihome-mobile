@@ -1,0 +1,67 @@
+name: CI UniHome Mobile
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  static-analysis:
+    if: false # DESACTIVADO: Flujo en preparación, ejecución solo en entorno local por ahora
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci --legacy-peer-deps
+      - name: Verificación estática TypeScript
+        run: npx tsc --noEmit
+
+  security-tests:
+    if: false # DESACTIVADO: Flujo en preparación
+    needs: static-analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci --legacy-peer-deps
+      - name: Pruebas unitarias de seguridad Jest
+        run: npm run test:security
+
+  security-scan:
+    if: false # DESACTIVADO: Flujo en preparación
+    needs: security-tests
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inicializar CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+      - name: Analizar código con CodeQL
+        uses: github/codeql-action/analyze@v3
+
+  build-check:
+    if: false # DESACTIVADO: Flujo en preparación
+    needs: security-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci --legacy-peer-deps
+      - name: Expo export dry-run
+        run: npx expo export --no-bytecode
