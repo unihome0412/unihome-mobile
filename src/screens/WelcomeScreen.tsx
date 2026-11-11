@@ -12,14 +12,14 @@ import { Button, Icon } from "../components/ui";
 import { colors, fonts } from "../theme/tokens";
 import { RootStackParamList } from "../../App";
 import logoWide from "../assets/unihome-logo-wide.png";
-import heroCampus from "../assets/hero-campus.webp";
+import heroAlojamiento from "../assets/estudiantes-alojamiento.jpg";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Welcome">;
 
 /**
  * Pantalla de Bienvenida (ruta "/" en Figma/src/App.tsx líneas 1354-1419).
- * Utiliza el logotipo oficial y la ilustración detallada del edificio estudiantil
- * frente a la Universidad Nacional ("Casa Estudiantil El Colibrí") extraída de la maqueta.
+ * Utiliza el logotipo oficial y la ilustración de estudiantes buscando
+ * departamentos y alojamiento universitario al mudarse lejos de su hogar.
  */
 export const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
   return (
@@ -38,13 +38,13 @@ export const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
         />
       </View>
 
-      {/* Ilustración detallada del edificio ("Universidad Nacional · Campus Central") */}
+      {/* Ilustración de búsqueda de departamentos para estudiantes que viven lejos */}
       <View style={styles.heroContainer}>
         <Image
-          source={heroCampus}
+          source={heroAlojamiento}
           style={styles.heroImage}
           resizeMode="cover"
-          accessibilityLabel="Casa estudiantil frente al campus universitario, con estudiantes en los balcones y en la banqueta"
+          accessibilityLabel="Estudiante universitario con equipaje buscando departamento acogedor cerca de su campus universitario"
         />
 
         <View style={styles.trustOverlayCard}>

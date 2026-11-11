@@ -163,6 +163,9 @@ async function parseErrorResponse(response: Response): Promise<ApiClientError> {
     defaultMessage = detail || "Tu cuenta requiere confirmación de correo o no tiene acceso.";
   } else if (status === 409) {
     defaultMessage = "Este correo ya está registrado en UniHome. Puedes iniciar sesión directamente.";
+    if (!fieldErrors.correo && !fieldErrors.Correo) {
+      fieldErrors.correo = [defaultMessage];
+    }
   } else if (status === 410) {
     defaultMessage = "El código de verificación venció (vigencia de 10 minutos). Solicita uno nuevo.";
   } else if (status === 429) {
@@ -312,19 +315,44 @@ export const authApi = {
    */
   async registrarUsuario(payload: RegistroInput): Promise<RegistroResponse> {
     const cleanEmail = payload.correo.trim().toLowerCase();
-    return request<RegistroResponse>("/api/v1/auth/registro", {
-      method: "POST",
-      body: {
-        nombreCompleto: payload.nombreCompleto.trim(),
-        correo: cleanEmail,
-        fechaNacimiento: payload.fechaNacimiento.trim(),
-        genero: toApiGender(payload.genero),
-        contrasena: payload.contrasena,
-        confirmarContrasena: payload.confirmarContrasena,
-        aceptoAvisoPrivacidad: payload.aceptoAvisoPrivacidad,
-        versionAvisoPrivacidad: payload.versionAvisoPrivacidad ?? PRIVACY_NOTICE_VERSION,
-      } satisfies RegistroRequest,
-    });
+
+    // Verificación preventiva de duplicados antes de despacho de red
+    const isRegisteredLocally = await sessionStorage.isEmailRegistered(cleanEmail);
+    if (isRegisteredLocally) {
+      throw new ApiClientError({
+        status: 409,
+        message: "Este correo ya está registrado en UniHome. Puedes iniciar sesión directamente.",
+        detail: "Este correo ya está registrado en UniHome. Puedes iniciar sesión directamente.",
+        fieldErrors: {
+          correo: ["Este correo ya está registrado en UniHome. Puedes iniciar sesión directamente."],
+        },
+      });
+    }
+
+    try {
+      const response = await request<RegistroResponse>("/api/v1/auth/registro", {
+        method: "POST",
+        body: {
+          nombreCompleto: payload.nombreCompleto.trim(),
+          correo: cleanEmail,
+          fechaNacimiento: payload.fechaNacimiento.trim(),
+          genero: toApiGender(payload.genero),
+          contrasena: payload.contrasena,
+          confirmarContrasena: payload.confirmarContrasena,
+          aceptoAvisoPrivacidad: payload.aceptoAvisoPrivacidad,
+          versionAvisoPrivacidad: payload.versionAvisoPrivacidad ?? PRIVACY_NOTICE_VERSION,
+        } satisfies RegistroRequest,
+      });
+
+      // Registrar correo en caché local tras registro exitoso
+      await sessionStorage.addRegisteredEmail(cleanEmail);
+      return response;
+    } catch (error) {
+      if (error instanceof ApiClientError && error.status === 409) {
+        await sessionStorage.addRegisteredEmail(cleanEmail);
+      }
+      throw error;
+    }
   },
 
   /**

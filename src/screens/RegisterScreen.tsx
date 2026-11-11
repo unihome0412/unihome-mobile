@@ -19,6 +19,7 @@ import {
   GeneroDisplay,
   PRIVACY_NOTICE_VERSION,
 } from "../services/authApi";
+import { sessionStorage } from "../services/sessionStorage";
 import { colors, fonts } from "../theme/tokens";
 import { RootStackParamList } from "../../App";
 
@@ -230,13 +231,31 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
 
   const pwdChecks = useMemo(() => evaluatePassword(pwd, pwd2), [pwd, pwd2]);
 
-  // Error de correo en tiempo real
+  // Error de correo en tiempo real (formato + detección de correo duplicado)
   const liveEmailError = useMemo(() => {
+    if (duplicateEmailConflict) {
+      return "Este correo ya está registrado en UniHome.";
+    }
     if (fieldErrors.correo) return fieldErrors.correo;
     if (!emailTouched && email.length === 0) return null;
     if (email.length > 0) return validateStrictEmail(email);
     return null;
-  }, [email, emailTouched, fieldErrors.correo]);
+  }, [email, emailTouched, fieldErrors.correo, duplicateEmailConflict]);
+
+  const handleEmailBlur = async () => {
+    setEmailTouched(true);
+    const cleanEmail = email.trim().toLowerCase();
+    if (cleanEmail && !validateStrictEmail(cleanEmail)) {
+      const isRegistered = await sessionStorage.isEmailRegistered(cleanEmail);
+      if (isRegistered) {
+        setDuplicateEmailConflict(true);
+        setFieldErrors((prev) => ({
+          ...prev,
+          correo: "Este correo ya está registrado en UniHome.",
+        }));
+      }
+    }
+  };
 
   // Años disponibles para el selector de calendario (cualquier fecha pasada válida — DEC-M10)
   const currentYear = new Date().getFullYear();
@@ -389,6 +408,10 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       if (err instanceof ApiError) {
         if (err.status === 409) {
           setDuplicateEmailConflict(true);
+          setFieldErrors((prev) => ({
+            ...prev,
+            correo: "Este correo ya está registrado en UniHome.",
+          }));
         } else if (err.status === 400) {
           setFieldErrors({
             nombreCompleto: err.getFieldError("nombreCompleto"),
@@ -508,7 +531,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
             />
           </Field>
 
-          {/* 2. Correo electrónico: validación estricta (máx. 100 caracteres) */}
+          {/* 2. Correo electrónico: validación estricta y detección de duplicados (máx. 100 caracteres) */}
           <Field label="Correo electrónico" error={liveEmailError}>
             <TextInput
               style={inputStyle(!!liveEmailError)}
@@ -519,7 +542,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               autoCorrect={false}
               maxLength={MAX_EMAIL_LENGTH}
               value={email}
-              onBlur={() => setEmailTouched(true)}
+              onBlur={handleEmailBlur}
               onChangeText={(v) => {
                 setEmail(v.slice(0, MAX_EMAIL_LENGTH));
                 setDuplicateEmailConflict(false);
@@ -587,87 +610,90 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </Field>
 
-          {/* 5. Contraseña y Confirmar contraseña en la misma fila con ícono de ojo interactivo */}
-          <View style={styles.passwordRow}>
-            <View style={styles.passwordCol}>
-              <Text style={styles.passwordLabel}>Contraseña</Text>
-              <View style={styles.passwordInputWrap}>
-                <TextInput
-                  style={[
-                    inputStyle(hasPwdInputError),
-                    styles.passwordInputCompact,
-                  ]}
-                  placeholder="Mínimo 8 caracteres"
-                  placeholderTextColor="#94a3b8"
-                  secureTextEntry={!showPwd}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  maxLength={MAX_PASSWORD_LENGTH}
-                  value={pwd}
-                  onBlur={() => setPwdTouched(true)}
-                  onChangeText={(v) => {
-                    setPwd(v.slice(0, MAX_PASSWORD_LENGTH));
-                    setFieldErrors((prev) => ({ ...prev, contrasena: null }));
-                  }}
+          {/* 5. Contraseña (ancho completo, apilado como Nombre y Correo) */}
+          <Field
+            label="Contraseña"
+            error={fieldErrors.contrasena}
+          >
+            <View style={styles.passwordInputWrap}>
+              <TextInput
+                style={[
+                  inputStyle(hasPwdInputError),
+                  styles.passwordInputFull,
+                ]}
+                placeholder="Mínimo 8 caracteres"
+                placeholderTextColor="#94a3b8"
+                secureTextEntry={!showPwd}
+                autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={MAX_PASSWORD_LENGTH}
+                value={pwd}
+                onBlur={() => setPwdTouched(true)}
+                onChangeText={(v) => {
+                  setPwd(v.slice(0, MAX_PASSWORD_LENGTH));
+                  setFieldErrors((prev) => ({ ...prev, contrasena: null }));
+                }}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPwd((prev) => !prev)}
+                style={styles.eyeBtnFull}
+                accessibilityLabel={
+                  showPwd ? "Ocultar contraseña" : "Mostrar contraseña"
+                }
+              >
+                <Icon
+                  name={showPwd ? "eyeOff" : "eye"}
+                  size={18}
+                  color={colors.slate500}
                 />
-                <TouchableOpacity
-                  onPress={() => setShowPwd((prev) => !prev)}
-                  style={styles.eyeBtnCompact}
-                  accessibilityLabel={
-                    showPwd ? "Ocultar contraseña" : "Mostrar contraseña"
-                  }
-                >
-                  <Icon
-                    name={showPwd ? "eyeOff" : "eye"}
-                    size={16}
-                    color={colors.slate500}
-                  />
-                </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             </View>
+          </Field>
 
-            <View style={styles.passwordCol}>
-              <Text style={styles.passwordLabel}>Confirmar contraseña</Text>
-              <View style={styles.passwordInputWrap}>
-                <TextInput
-                  style={[
-                    inputStyle(hasPwd2InputError),
-                    styles.passwordInputCompact,
-                  ]}
-                  placeholder="Repite tu contraseña"
-                  placeholderTextColor="#94a3b8"
-                  secureTextEntry={!showPwd2}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  maxLength={MAX_PASSWORD_LENGTH}
-                  value={pwd2}
-                  onBlur={() => setPwd2Touched(true)}
-                  onChangeText={(v) => {
-                    setPwd2(v.slice(0, MAX_PASSWORD_LENGTH));
-                    setFieldErrors((prev) => ({
-                      ...prev,
-                      confirmarContrasena: null,
-                    }));
-                  }}
+          {/* 6. Confirmar contraseña (ancho completo, apilado como Nombre y Correo) */}
+          <Field
+            label="Confirmar contraseña"
+            error={fieldErrors.confirmarContrasena}
+          >
+            <View style={styles.passwordInputWrap}>
+              <TextInput
+                style={[
+                  inputStyle(hasPwd2InputError),
+                  styles.passwordInputFull,
+                ]}
+                placeholder="Repite tu contraseña"
+                placeholderTextColor="#94a3b8"
+                secureTextEntry={!showPwd2}
+                autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={MAX_PASSWORD_LENGTH}
+                value={pwd2}
+                onBlur={() => setPwd2Touched(true)}
+                onChangeText={(v) => {
+                  setPwd2(v.slice(0, MAX_PASSWORD_LENGTH));
+                  setFieldErrors((prev) => ({
+                    ...prev,
+                    confirmarContrasena: null,
+                  }));
+                }}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPwd2((prev) => !prev)}
+                style={styles.eyeBtnFull}
+                accessibilityLabel={
+                  showPwd2
+                    ? "Ocultar confirmación de contraseña"
+                    : "Mostrar confirmación de contraseña"
+                }
+              >
+                <Icon
+                  name={showPwd2 ? "eyeOff" : "eye"}
+                  size={18}
+                  color={colors.slate500}
                 />
-                <TouchableOpacity
-                  onPress={() => setShowPwd2((prev) => !prev)}
-                  style={styles.eyeBtnCompact}
-                  accessibilityLabel={
-                    showPwd2
-                      ? "Ocultar confirmación de contraseña"
-                      : "Mostrar confirmación de contraseña"
-                  }
-                >
-                  <Icon
-                    name={showPwd2 ? "eyeOff" : "eye"}
-                    size={16}
-                    color={colors.slate500}
-                  />
-                </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             </View>
-          </View>
+          </Field>
 
           {/* 6. Panel compacto de requisitos y coincidencia de contraseña en tiempo real */}
           {showPasswordChecklist ? (
@@ -1015,34 +1041,20 @@ const styles = StyleSheet.create({
     color: colors.coralDark,
     fontWeight: "700",
   },
-  passwordRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 8,
-  },
-  passwordCol: {
-    flex: 1,
-  },
-  passwordLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: colors.slate700,
-    marginBottom: 6,
-  },
   passwordInputWrap: {
     position: "relative",
     justifyContent: "center",
+    width: "100%",
   },
-  passwordInputCompact: {
-    paddingRight: 34,
-    paddingHorizontal: 11,
-    fontSize: 12.5,
+  passwordInputFull: {
+    paddingRight: 46,
+    width: "100%",
   },
-  eyeBtnCompact: {
+  eyeBtnFull: {
     position: "absolute",
-    right: 4,
-    width: 30,
-    height: 34,
+    right: 10,
+    width: 36,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
   },

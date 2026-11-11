@@ -2,6 +2,7 @@ import * as SecureStore from "expo-secure-store";
 
 const REFRESH_TOKEN_KEY = "unihome_refresh_token";
 const SESSION_EMAIL_KEY = "unihome_session_email";
+const REGISTERED_EMAILS_KEY = "unihome_registered_emails";
 
 /**
  * Access token vive únicamente en memoria del proceso (ADR-M002 Opción B / FT-02 §3).
@@ -9,6 +10,7 @@ const SESSION_EMAIL_KEY = "unihome_session_email";
  */
 let inMemoryAccessToken: string | null = null;
 let inMemoryExpiresAt: string | null = null;
+const inMemoryRegisteredEmails = new Set<string>();
 
 export const sessionStorage = {
   getAccessToken(): string | null {
@@ -46,6 +48,45 @@ export const sessionStorage = {
 
   async setSessionEmail(email: string): Promise<void> {
     await SecureStore.setItemAsync(SESSION_EMAIL_KEY, email);
+    await this.addRegisteredEmail(email);
+  },
+
+  /**
+   * Registro y consulta local de correos ya registrados (DEC-09 / MV-F01-R08)
+   * Evita duplicados en cliente y complementa la validación 409 del backend.
+   */
+  async getRegisteredEmails(): Promise<string[]> {
+    try {
+      const stored = await SecureStore.getItemAsync(REGISTERED_EMAILS_KEY);
+      if (stored) {
+        const parsed: string[] = JSON.parse(stored);
+        parsed.forEach((e) => inMemoryRegisteredEmails.add(e.trim().toLowerCase()));
+      }
+    } catch {
+      // Ignorar si no hay datos o error de parseo
+    }
+    return Array.from(inMemoryRegisteredEmails);
+  },
+
+  async addRegisteredEmail(email: string): Promise<void> {
+    const clean = email.trim().toLowerCase();
+    if (!clean) return;
+    inMemoryRegisteredEmails.add(clean);
+    try {
+      await SecureStore.setItemAsync(
+        REGISTERED_EMAILS_KEY,
+        JSON.stringify(Array.from(inMemoryRegisteredEmails))
+      );
+    } catch {
+      // Ignorar si no se puede escribir
+    }
+  },
+
+  async isEmailRegistered(email: string): Promise<boolean> {
+    const clean = email.trim().toLowerCase();
+    if (inMemoryRegisteredEmails.has(clean)) return true;
+    const list = await this.getRegisteredEmails();
+    return list.includes(clean);
   },
 
   /**

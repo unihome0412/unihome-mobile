@@ -23,6 +23,8 @@ jest.mock("../../src/services/sessionStorage", () => {
       setSessionEmail: jest.fn(async (email: string) => {
         mockEmail = email;
       }),
+      isEmailRegistered: jest.fn(async () => false),
+      addRegisteredEmail: jest.fn(async () => {}),
       clearSession: jest.fn(async () => {
         mockAccess = null;
         mockExpires = null;
@@ -117,6 +119,34 @@ describe("Seguridad en Flujos de Autenticación (ST-F01-001, ST-F01-002, ST-F02-
       expect(apiErr.message).toBe(
         "Este correo ya está registrado en UniHome. Puedes iniciar sesión directamente."
       );
+    }
+  });
+
+  test("Validación de correo duplicado: si el correo ya existe en el registro local, rechaza de inmediato sin llamada a red", async () => {
+    (sessionStorage.isEmailRegistered as jest.Mock).mockResolvedValueOnce(true);
+    const mockFetch = jest.fn();
+    global.fetch = mockFetch;
+
+    try {
+      await authApi.registrarUsuario({
+        nombreCompleto: "Valeria Sánchez",
+        correo: "duplicado@unihome.edu.mx",
+        fechaNacimiento: "2004-05-15",
+        genero: "Mujer",
+        contrasena: "Password123!",
+        confirmarContrasena: "Password123!",
+        aceptoAvisoPrivacidad: true,
+      });
+      // No debería llegar aquí
+      expect(true).toBe(false);
+    } catch (err) {
+      const apiErr = err as ApiClientError;
+      expect(apiErr.status).toBe(409);
+      expect(apiErr.fieldErrors.correo).toContain(
+        "Este correo ya está registrado en UniHome. Puedes iniciar sesión directamente."
+      );
+      // Validar que fetch NUNCA fue llamado porque se bloqueó preventivamente en local
+      expect(mockFetch).not.toHaveBeenCalled();
     }
   });
 
