@@ -23,8 +23,8 @@
 - [x] Selección de lint, typecheck, pruebas, análisis estático y CI/CD implementada dentro de la excepción (`AUT-SM-20261112-CICD-MOVIL`)
 - [x] Comandos locales y resultados verificables registrados en `docs/ci-cd/EVIDENCIAS.md`
 - [x] Sin afirmar cobertura, compilación ni despliegue no ejecutados
-- [x] Seis checks existentes verificados en el head `800e14c` del PR (run `43308889841`); commits posteriores solo documentales se revalidan en el PR
-- [x] APK debug de GitHub Actions verificado con SHA256 `88f84b47...ec9ec` (run `43308890225`)
+- [x] Seis checks existentes verificados en el head `ecd6960` del PR (run `43311255547`); commits posteriores solo documentales se revalidan en el PR
+- [x] APK debug de GitHub Actions verificado con SHA256 `634cce44...9fd50` (run `43311253954`)
 - [ ] APK/AAB release firmado ejecutado (bloqueado: sin secretos ni autorización)
 - [ ] Publicación en Google Play (no autorizada; no ejecutada)
 

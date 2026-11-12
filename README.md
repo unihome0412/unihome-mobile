@@ -132,7 +132,7 @@ Skills: `comprobar-constitucion-movil`, `auditar-trazabilidad-movil`, `revisar-r
 | Publicación Play | `.github/workflows/play-publish.yml`; manual, gates por variable/secreto y entorno, **no ejecutada** |
 | Docker / EAS cloud | No utilizados |
 
-Evidencia real del 2026-11-12: CI [`43308889841`](https://github.com/unihome0412/unihome-mobile/actions/runs/43308889841) y APK debug [`43308890225`](https://github.com/unihome0412/unihome-mobile/actions/runs/43308890225), ambos `success` sobre el head `800e14c`. La reproducción local, los nombres de secretos y la activación de Play están en [`docs/ci-cd/README.md`](docs/ci-cd/README.md); el detalle de artefactos está en [`docs/ci-cd/EVIDENCIAS.md`](docs/ci-cd/EVIDENCIAS.md).
+Evidencia real del 2026-11-12: CI [`43311255547`](https://github.com/unihome0412/unihome-mobile/actions/runs/43311255547) y APK debug [`43311253954`](https://github.com/unihome0412/unihome-mobile/actions/runs/43311253954), ambos `success` sobre el head `ecd6960`. La reproducción local, los nombres de secretos y la activación de Play están en [`docs/ci-cd/README.md`](docs/ci-cd/README.md); el detalle de artefactos está en [`docs/ci-cd/EVIDENCIAS.md`](docs/ci-cd/EVIDENCIAS.md).
 
 ## Cómo utilizarlo
 

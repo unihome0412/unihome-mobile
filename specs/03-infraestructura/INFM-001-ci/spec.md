@@ -14,7 +14,7 @@
 | Seguridad rápida | Gitleaks, CodeQL, SCA, SBOM y gate de manifiesto implementados |
 | Empaquetado | `expo export` JS verificado; build APK/AAB separado en workflows nativos |
 | Branch protection | No modificada; los seis nombres se conservan |
-| Run de GitHub | `43308889841` en `success` sobre `800e14c` (2026-11-12) |
+| Run de GitHub | `43311255547` en `success` sobre `ecd6960` (2026-11-12) |
 
 La validación de un workflow en YAML no equivale a un run exitoso. El run real y sus artefactos constan en `docs/ci-cd/EVIDENCIAS.md`.
 
