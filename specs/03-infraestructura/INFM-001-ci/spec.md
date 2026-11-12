@@ -14,8 +14,9 @@
 | Seguridad rápida | Gitleaks, CodeQL, SCA, SBOM y gate de manifiesto implementados |
 | Empaquetado | `expo export` JS verificado; build APK/AAB separado en workflows nativos |
 | Branch protection | No modificada; los seis nombres se conservan |
+| Run de GitHub | `43308889841` en `success` sobre `800e14c` (2026-11-12) |
 
-La validación de un workflow en YAML no equivale a un run exitoso.
+La validación de un workflow en YAML no equivale a un run exitoso. El run real y sus artefactos constan en `docs/ci-cd/EVIDENCIAS.md`.
 
 ## Propósito
 Dar retroalimentación rápida y confiable sobre cada cambio del cliente: que compile en tipos, pase pruebas y respete las políticas de seguridad **antes** de fusionar. Los escaneos de seguridad se detallan en `INFM-003`; aquí se define la estructura y el orden.

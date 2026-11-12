@@ -2,7 +2,7 @@
 
 **Vigencia:** 2026-11-12. **Alcance:** CI/CD, DevSecOps, pruebas y builds Android del cliente móvil. **Fuera de alcance:** cambios funcionales, backend, Docker, EAS Build cloud y publicación no autorizada.
 
-> `G-M06` sigue pendiente de ratificación docente global. La autorización de equipo cubre únicamente este PR de infraestructura. La publicación en Google Play no se ejecutó y no se declara probada.
+> `G-M06` sigue pendiente de ratificación docente global. La autorización de equipo cubre únicamente este PR de infraestructura. La publicación en Google Play no se ejecutó y no se declara probada. Evidencia vigente: CI `43308889841` y APK debug `43308890225`, ambos `success` sobre `800e14c`; ver `EVIDENCIAS.md`.
 
 ## 1. Estado y decisiones
 

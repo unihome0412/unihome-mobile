@@ -132,5 +132,6 @@ Fuente: *Lineamientos para el desarrollo del proyecto Móvil*, cuatrimestre sept
 - **Android:** workflow `android-build.yml` con Expo CNG + Gradle, JDK 17, SDK 37/Build Tools 36/NDK 27.1.12297006, APK debug sin secretos. Workflow `android-release.yml` manual con AAB firmado por secretos de environment y limpieza de keystore. No se ejecuto build nativo local por ausencia de Java.
 - **CD:** `play-publish.yml` manual, consume el mismo AAB por `release_run_id`, exige variables, secreto de service account, environment y confirmacion. No se ejecuto ni se publico.
 - **Documentacion:** README, AGENTS, CHECKLIST_PR, FT-03/FT-04, INFM-001..005 y ADR-M004/M005 reconciliados. Historia anterior conservada; `G-M06` sigue PENDIENTE.
-- **Evidencias:** `docs/ci-cd/EVIDENCIAS.md`; los run IDs y artefactos de GitHub se agregan solo despues de ejecutarse.
+- **Evidencias:** CI `43308889841` y Android Debug `43308890225` terminaron `success` sobre el head `800e14c`. APK debug: 189,143,015 bytes, SHA256 `88f84b47b87946be5fd7b7055a4f91352aee8739590d5cabd6c09ae5bb3ec9ec`, targetSdk 36; firma debug no apta para Play. Cobertura, SBOM y Gitleaks se descargaron y verificaron. Detalle en `docs/ci-cd/EVIDENCIAS.md`.
+- **Sin ejecutar:** AAB release firmado y publicación Play. No se crearon credenciales ni environments.
 - **Errores a evitar:** no tratar un YAML valido como run verde; no reutilizar debug keystore para release; no usar secretos reales en PR; no declarar Play probado sin cuenta y autorizacion.

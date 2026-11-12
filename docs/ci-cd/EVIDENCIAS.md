@@ -40,10 +40,23 @@ La cobertura no se declara suficiente: solo protege la línea base medida. Las p
 
 | Workflow | Run ID | Commit | Estado | Artefacto |
 |---|---|---|---|---|
-| CI UniHome Mobile | Pendiente | Pendiente | Pendiente | Cobertura, SCA y SBOM |
-| Android Debug Build | Pendiente | Pendiente | Pendiente | APK debug + SHA256 |
+| CI UniHome Mobile | [`43308889841`](https://github.com/unihome0412/unihome-mobile/actions/runs/43308889841) | `800e14cd1f0e12fb19fa5ee5f3a633e592671634` | **success** | Cobertura, SCA, SBOM y Gitleaks |
+| Android Debug Build | [`43308890225`](https://github.com/unihome0412/unihome-mobile/actions/runs/43308890225) | `800e14cd1f0e12fb19fa5ee5f3a633e592671634` | **success** (10m 37s) | APK debug + SHA256 |
 | Android Release AAB | NO EJECUTADO | — | Bloqueado por secretos/environment y autorización | — |
 | Google Play | NO EJECUTADO | — | Bloqueado por autorización y cuentas | — |
+
+Los seis checks obligatorios y el check opcional de Android concluyeron en `success` sobre el head `800e14c`. El metadata del APK registró `18847f08f6890a7f0ea66a29575a84b5b0befa22`, SHA de merge propio del evento `pull_request`; el run pertenece al head indicado.
+
+Artefactos descargados y verificados:
+
+| Artefacto | ID | Tamaño ZIP | Contenido verificable |
+|---|---:|---:|---|
+| `unihome-debug-apk` | `13986111545` | 60,380,655 bytes | APK de 189,143,015 bytes; SHA256 `88f84b47b87946be5fd7b7055a4f91352aee8739590d5cabd6c09ae5bb3ec9ec` |
+| `coverage-report` | `13984593522` | 115,934 bytes | `lcov.info` y `coverage-summary.json` |
+| `sca-sbom-reports` | `13984922082` | 68,161 bytes | Auditorías runtime/completa y SBOM CycloneDX |
+| `gitleaks-report` | `13985970291` | 159 bytes | Reporte JSON `[]` (sin fugas) |
+
+El APK debug se generó con `expo prebuild` y `:app:assembleDebug`; se verificó con `aapt2`: package `mx.unihome.app`, `versionCode=1000000`, `targetSdk=36`. Su firma es **debug y no sirve para Google Play**.
 
 ## Bloqueos reales
 

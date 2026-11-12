@@ -8,10 +8,10 @@
 
 | Control | Implementación | Estado |
 |---|---|---|
-| Secretos | Gitleaks CLI 8.30.1, historial completo, reporte redactado | Implementado; run de GitHub pendiente |
-| SAST | CodeQL JavaScript/TypeScript con `security-events: write` solo en su job | Implementado; run pendiente |
-| SCA | `npm audit` runtime y completa; high/critical bloquean | Implementado; 0 high/critical local |
-| SBOM | `npm sbom` CycloneDX 1.5 | Implementado; 324 componentes local |
+| Secretos | Gitleaks CLI 8.30.1, historial completo, reporte redactado | Ejecutado; reporte `[]`, run `43308889841` |
+| SAST | CodeQL JavaScript/TypeScript con `security-events: write` solo en su job | Ejecutado; run `43308889841` |
+| SCA | `npm audit` runtime y completa; high/critical bloquean | Ejecutado; 0 high/critical, 6 low/17 moderate |
+| SBOM | `npm sbom` CycloneDX 1.5 | Ejecutado; 324 componentes |
 | Manifiesto | `aapt2`/manifiesto generado; permisos, cleartext, debug, backup y exportados | Implementado |
 | Workflows | SHA completo, permisos, `persist-credentials: false`, sin `pull_request_target` | Implementado y probado localmente |
 | Binario/licencias | Sin herramienta seleccionada | Pendiente |
