@@ -11,9 +11,9 @@ Convertir un cambio aprobado en un paquete firmado y llevarlo a Google Play por 
 
 | Ambiente | Disparador | Pista de Google Play | Aprobación |
 |---|---|---|---|
-| `dev` | Merge a `develop` con CI y seguridad verdes | Pruebas internas | Automática (solo este ambiente) |
-| `staging` | Etiqueta `mobile-vX.Y.Z-rc.N` | Pruebas cerradas | Humana (≥1 persona) |
-| `prod` | Etiqueta `mobile-vX.Y.Z` desde el mismo candidato probado | Producción (escalonada) | Humana de **persona distinta** del autor (CM-15) |
+| `dev` | Push/Merge a `main` con CI y seguridad verdes (futuro; condicionado a decisión de publicación) | Pruebas internas | Automática o manual según configuración (solo este ambiente) |
+| `staging` | Etiqueta `mobile-vX.Y.Z-rc.N` desde `main` | Pruebas cerradas | Humana (≥1 persona) |
+| `prod` | Etiqueta `mobile-vX.Y.Z` desde `main` con el mismo candidato probado | Producción (escalonada) | Humana de **persona distinta** del autor (CM-15) |
 
 ## Matriz de versionamiento (Propuesta; DEC-M07; lineamiento 11)
 
@@ -29,7 +29,7 @@ Convertir un cambio aprobado en un paquete firmado y llevarlo a Google Play por 
 
 | ID | Requisito (DEBE) | Norma |
 |---|---|---|
-| MV-I02-R01 | **Ningún** despliegue a producción es automático; la promoción a `staging` y `prod` exige aprobación humana mediante ambientes protegidos | CM-15 |
+| MV-I02-R01 | **Ningún** despliegue a producción es automático; en el modelo GitHub Flow adoptado, la promoción a `staging` y `prod` desde `main` exige aprobación humana mediante ambientes protegidos | CM-15 |
 | MV-I02-R02 | El autor del cambio **no** puede aprobar su propio lanzamiento a producción | CM-15 |
 | MV-I02-R03 | El artefacto (`.aab`) lo genera **solo el pipeline**, nunca un equipo local; el mismo artefacto/versión se **promueve** entre pistas (no se recompila) | CM-15, ADR-M004 |
 | MV-I02-R04 | La firma usa la llave de carga guardada como secreto de ambiente, nunca en el repositorio ni en registros | MV-A02-R13 |
