@@ -25,9 +25,19 @@ if (!["debug", "release", "release-source"].includes(profile)) {
 const appJson = JSON.parse(fs.readFileSync("app.json", "utf8")).expo;
 const android = appJson.android;
 const errors = [];
-const allowedPermissions = new Set(["android.permission.INTERNET", "android.permission.VIBRATE"]);
+const allowedPermissions = new Set([
+  "android.permission.INTERNET",
+  "android.permission.VIBRATE",
+  // Expo SecureStore declara capacidades biométricas aunque la app no las invoque.
+  "android.permission.USE_BIOMETRIC",
+  "android.permission.USE_FINGERPRINT",
+  // Permiso de firma interno generado por AndroidX; no otorga acceso a datos.
+  `${android.package}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`,
+]);
 if (profile === "debug") {
   allowedPermissions.add("android.permission.SYSTEM_ALERT_WINDOW");
+  // Android 17 lo incorpora para depuración/Metro; no se permite en release.
+  allowedPermissions.add("android.permission.ACCESS_LOCAL_NETWORK");
 }
 
 function fail(message) {
