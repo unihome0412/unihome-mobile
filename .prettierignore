@@ -1,0 +1,17 @@
+# Generated or binary material
+android/
+coverage/
+dist/
+node_modules/
+package-lock.json
+src/assets/
+
+# SDD narrative documents use deliberate manual formatting
+AGENTS.md
+CHECKLIST_PR.md
+README.md
+constitution.md
+memoria.md
+docs/
+specs/
+tests/

@@ -1,8 +1,21 @@
 # INFM-001 — Integración continua (CI) del cliente móvil
 
-**Versión:** 0.1.0 | **Estado:** Propuesto — requiere aprobación; **plantilla inactiva** | **Depende de:** `../../constitution.md` (CM-03, CM-08, CM-11, CM-15), `ARQM-006`, ADR-M001, DEC-M03, DEC-M04 | **Lineamientos:** 5, 7, 8 | **Contraparte backend:** `INF-001-ci` y `INF-003` (Propuesto, backend) | **Plantilla:** `plantillas/ci-movil-pr.yml.example`.
+**Versión:** 0.2.0 | **Estado:** Implementado parcialmente y ejecutado localmente; aprobación G-M06 pendiente | **Depende de:** `../../constitution.md` (CM-03, CM-08, CM-11, CM-15), `ARQM-006`, ADR-M001, DEC-M03, DEC-M04 | **Lineamientos:** 5, 7, 8 | **Contraparte backend:** `INF-001-ci` y `INF-003` (Propuesto, backend) | **Plantilla:** `plantillas/ci-movil-pr.yml.example`.
 
-> No se ejecuta ningún pipeline ni se crean workflows activos (CM-03). Los ejemplos de comandos son ilustrativos y dependen de los scripts que defina el proyecto una vez aprobado ADR-M001. No se fijan versiones de herramientas sin aprobar el ADR.
+> **Transición 2026-11-12:** el workflow activo vive en `.github/workflows/ci.yml`; la plantilla histórica se conserva como referencia. El CI conserva los seis checks, usa Node `22.23.5`, lockfile, lint, pruebas y validadores. La ejecución en GitHub se registra en `docs/ci-cd/EVIDENCIAS.md`; no se presume verde. G-M06 no está ratificado globalmente.
+
+## Estado de implementación (2026-11-12)
+
+| Elemento | Estado |
+|---|---|
+| Etapas 1-2 (preparación, tipos y estilo) | Implementadas; tipos/lint/format ejecutados localmente |
+| Pruebas Jest | 4 suites, 13 pruebas de seguridad; cobertura global mínima medida |
+| Integración/contrato | Pendientes; no hay API simulada ni backend en este PR |
+| Seguridad rápida | Gitleaks, CodeQL, SCA, SBOM y gate de manifiesto implementados |
+| Empaquetado | `expo export` JS verificado; build APK/AAB separado en workflows nativos |
+| Branch protection | No modificada; los seis nombres se conservan |
+
+La validación de un workflow en YAML no equivale a un run exitoso.
 
 ## Propósito
 Dar retroalimentación rápida y confiable sobre cada cambio del cliente: que compile en tipos, pase pruebas y respete las políticas de seguridad **antes** de fusionar. Los escaneos de seguridad se detallan en `INFM-003`; aquí se define la estructura y el orden.

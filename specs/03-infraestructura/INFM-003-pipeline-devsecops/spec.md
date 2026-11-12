@@ -1,8 +1,22 @@
 # INFM-003 — Pipeline DevSecOps del cliente móvil
 
-**Versión:** 0.1.0 | **Estado:** Propuesto — requiere aprobación | **Depende de:** `../../constitution.md` (CM-07, CM-09, CM-11, CM-15), `ARQM-002`, `INFM-001`, `INFM-002` | **Lineamientos:** 5, 7 | **Amenazas:** THM-02, THM-06, THM-07 | **Contraparte backend:** `INF-003-pipeline-devsecops` (Propuesto, backend).
+**Versión:** 0.2.0 | **Estado:** Implementado parcialmente; aprobación y controles pendientes | **Depende de:** `../../constitution.md` (CM-07, CM-09, CM-11, CM-15), `ARQM-002`, `INFM-001`, `INFM-002` | **Lineamientos:** 5, 7 | **Amenazas:** THM-02, THM-06, THM-07 | **Contraparte backend:** `INF-003-pipeline-devsecops` (Propuesto, backend).
 
-> Ningún escaneo se ejecuta ni se afirma como realizado. Las herramientas son **candidatas**; cada una requiere ADR o aprobación según CM-09. Las condiciones de licencia y de gratuidad de cada herramienta **se verifican al elegirla** (por ejemplo, algunas funciones solo son gratuitas en repositorios públicos).
+> **Transición 2026-11-12:** se implementaron Gitleaks, CodeQL, SCA, SBOM, gate de manifiesto y validador de workflows. La ejecución en GitHub se registra en `docs/ci-cd/EVIDENCIAS.md`. Licencias, análisis del binario y umbrales por severidad siguen pendientes; no se declaran resultados no ejecutados.
+
+## Estado de implementación (2026-11-12)
+
+| Control | Implementación | Estado |
+|---|---|---|
+| Secretos | Gitleaks CLI 8.30.1, historial completo, reporte redactado | Implementado; run de GitHub pendiente |
+| SAST | CodeQL JavaScript/TypeScript con `security-events: write` solo en su job | Implementado; run pendiente |
+| SCA | `npm audit` runtime y completa; high/critical bloquean | Implementado; 0 high/critical local |
+| SBOM | `npm sbom` CycloneDX 1.5 | Implementado; 324 componentes local |
+| Manifiesto | `aapt2`/manifiesto generado; permisos, cleartext, debug, backup y exportados | Implementado |
+| Workflows | SHA completo, permisos, `persist-credentials: false`, sin `pull_request_target` | Implementado y probado localmente |
+| Binario/licencias | Sin herramienta seleccionada | Pendiente |
+
+Las excepciones a hallazgos requieren responsable, motivo, alcance y caducidad; no se agregó ningún bypass.
 
 ## Gates y herramientas candidatas
 

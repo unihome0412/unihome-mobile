@@ -1,6 +1,6 @@
 # Task — FT-03 infraestructura-cicd-devsecops
 
-**Estado general:** **NO INICIADO** (0/20 tareas ejecutadas). Despliegue mantenido en **LOCAL** por decisión confirmada.
+**Estado general:** implementación técnica parcial iniciada el 2026-11-12 dentro de la excepción CI/CD. Las tareas de aprobación, Play y cierre global siguen sin ejecutar; no se marcan como completadas.
 
 - [ ] **TM-301..TM-305:** Tareas de CI detalladas en `../03-infraestructura/INFM-001-ci/task.md` (`MV-I01-T01..T05`).
 - [ ] **TM-306..TM-311:** Tareas de CD detalladas en `../03-infraestructura/INFM-002-cd/task.md` (`MV-I02-T01..T06`).

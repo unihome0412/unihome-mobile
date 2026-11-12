@@ -1,0 +1,166 @@
+name: Google Play - Publicación Controlada
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_run_id:
+        description: "Run ID del workflow Android Release AAB que generó el artefacto"
+        required: true
+        type: string
+      track:
+        description: "Pista de destino; usa el mismo AAB en todas las pistas"
+        required: true
+        type: choice
+        options:
+          - internal
+          - closed
+          - production
+      confirm:
+        description: "Escribe PUBLICAR para pistas internas/cerradas o PUBLICAR PRODUCCION para producción"
+        required: true
+        type: string
+      user_fraction:
+        description: "Fracción inicial solo para producción (0.01 a 1.0)"
+        required: false
+        default: "0.05"
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: play-publish-${{ inputs.track }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Promover AAB existente a Google Play (${{ inputs.track }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: ${{ inputs.track == 'production' && 'play-production' || inputs.track == 'closed' && 'play-closed' || 'play-internal' }}
+    steps:
+      - name: Verificar autorización explícita y secretos sin imprimir valores
+        env:
+          PLAY_PUBLISHING_ENABLED: ${{ vars.PLAY_PUBLISHING_ENABLED }}
+          PLAY_PRODUCTION_ENABLED: ${{ vars.PLAY_PRODUCTION_ENABLED }}
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          TRACK: ${{ inputs.track }}
+          CONFIRM: ${{ inputs.confirm }}
+          USER_FRACTION: ${{ inputs.user_fraction }}
+        run: |
+          set -euo pipefail
+          test "${PLAY_PUBLISHING_ENABLED}" = "true" || {
+            echo "::error::Publicación deshabilitada: configure PLAY_PUBLISHING_ENABLED=true solo tras autorización"
+            exit 1
+          }
+          test -n "${PLAY_SERVICE_ACCOUNT_JSON}" || {
+            echo "::error::Falta PLAY_SERVICE_ACCOUNT_JSON en el environment protegido"
+            exit 1
+          }
+          if test "${TRACK}" = "production"; then
+            test "${PLAY_PRODUCTION_ENABLED}" = "true" || {
+              echo "::error::Producción deshabilitada: falta PLAY_PRODUCTION_ENABLED=true"
+              exit 1
+            }
+            test "${CONFIRM}" = "PUBLICAR PRODUCCION" || {
+              echo "::error::Confirmación de producción incorrecta"
+              exit 1
+            }
+            node -e '
+              const value = Number(process.env.USER_FRACTION);
+              if (!Number.isFinite(value) || value <= 0 || value > 1) {
+                console.error("user_fraction inválido");
+                process.exit(1);
+              }
+            '
+          else
+            test "${CONFIRM}" = "PUBLICAR" || {
+              echo "::error::Confirmación incorrecta"
+              exit 1
+            }
+          fi
+
+      - name: Verificar que el run de release sea exitoso y provenga de main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_RUN_ID: ${{ inputs.release_run_id }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RELEASE_RUN_ID}" > release-run.json
+          jq -e '
+            .head_branch == "main" and
+            .conclusion == "success" and
+            .path == ".github/workflows/android-release.yml"
+          ' release-run.json > /dev/null || {
+            echo "::error::El run indicado no es un release exitoso de main"
+            exit 1
+          }
+
+      - name: Descargar el AAB exacto generado por el release
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: unihome-release-aab
+          run-id: ${{ inputs.release_run_id }}
+          github-token: ${{ github.token }}
+          path: release
+
+      - name: Verificar integridad y correspondencia del AAB descargado
+        run: |
+          set -euo pipefail
+          test -s release/unihome-release.aab
+          cd release
+          sha256sum -c unihome-release.aab.sha256
+          cd ..
+          node - <<'NODE'
+          const crypto = require("node:crypto");
+          const fs = require("node:fs");
+          const app = require("./app.json").expo;
+          const metadata = JSON.parse(fs.readFileSync("release/release-metadata.json", "utf8"));
+          const artifact = fs.readFileSync("release/unihome-release.aab");
+          const sha256 = crypto.createHash("sha256").update(artifact).digest("hex");
+          if (metadata.sha256 !== sha256) throw new Error("SHA256 no coincide con el metadata");
+          if (metadata.package !== app.android.package) throw new Error("applicationId no coincide");
+          if (metadata.versionCode !== app.android.versionCode) throw new Error("versionCode no coincide");
+          if (metadata.versionName !== app.version) throw new Error("versionName no coincide");
+          if (!metadata.commit) throw new Error("Falta el commit de procedencia");
+          console.log(`AAB verificado: ${metadata.package} ${metadata.versionCode} ${sha256}`);
+          NODE
+
+      - name: Subir el mismo AAB a pista interna o cerrada
+        if: inputs.track != 'production'
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1.1.5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: mx.unihome.app
+          releaseFiles: release/unihome-release.aab
+          track: ${{ inputs.track }}
+          status: completed
+          changesNotSentForReview: false
+
+      - name: Preparar el mismo AAB como borrador y rollout escalonado de producción
+        if: inputs.track == 'production'
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1.1.5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: mx.unihome.app
+          releaseFiles: release/unihome-release.aab
+          track: production
+          status: draft
+          userFraction: ${{ inputs.user_fraction }}
+          changesNotSentForReview: true
+
+      - name: Resumen de publicación controlada
+        run: |
+          {
+            echo "### Google Play: ${TRACK}"
+            echo "- AAB: release/unihome-release.aab"
+            echo "- El artefacto se descargó del run ${RELEASE_RUN_ID}; no se recompiló."
+            echo "- Producción queda en borrador y sin enviar a revisión hasta completar la consola."
+            echo "- Confirmación registrada: ${CONFIRM}"
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          TRACK: ${{ inputs.track }}
+          RELEASE_RUN_ID: ${{ inputs.release_run_id }}
+          CONFIRM: ${{ inputs.confirm }}

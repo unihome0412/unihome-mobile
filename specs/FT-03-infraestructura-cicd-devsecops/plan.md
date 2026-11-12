@@ -1,10 +1,10 @@
 # Plan — FT-03 infraestructura-cicd-devsecops
 
 **ID:** PLAN-MOV-CICD-001  
-**Estado:** planificación documentada, **no ejecutada** (ejecución actual en modo **LOCAL**).  
+**Estado:** implementación CI/CD iniciada el 2026-11-12 en `feature/mobile-cicd-android-delivery`; publicación no ejecutada y aprobación global pendiente.  
 **Base:** `spec.md` y paquete `../03-infraestructura/`.
 
 ## 1. Estrategia por fases
-1. **Entorno local (activo para desarrollo cuando se apruebe G-M06):** Ejecución local de verificación de tipos TypeScript, linter, pruebas unitarias/integración con Jest + React Native Testing Library y consumo de endpoints implementados sin exponer secretos.
-2. **Activación futura de CI (`INFM-001` e `INFM-003`):** Copiar `ci-movil-pr.yml.example` a `.github/workflows/` únicamente tras aprobación humana, fijando los SHA de las acciones.
-3. **Activación futura de CD (`INFM-002` e `INFM-005`):** Configurar secretos en GitHub Environments y promover el `.aab` cuando se autorice pasar del entorno local a tienda.
+1. **Validación local ejecutada (2026-11-12):** tipos, lint, formato, 13 pruebas de seguridad, cobertura y export JS, sin secretos.
+2. **CI activo (`INFM-001` e `INFM-003`):** `.github/workflows/ci.yml` conserva seis checks, acciones fijadas por SHA y validadores de seguridad.
+3. **CD preparado (`INFM-002` e `INFM-005`):** workflows de AAB y Play con environments/secretos externos; no se ejecutó publicación ni se crearon credenciales.
