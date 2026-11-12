@@ -64,13 +64,20 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Preparar Android SDK
-        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
-
       - name: Instalar plataforma 37, Build Tools 36 y NDK compatible
         run: |
           set -euo pipefail
-          sdkmanager --install \
+          test -n "${ANDROID_HOME:-}" || {
+            echo "::error::ANDROID_HOME no está definido en el runner"
+            exit 1
+          }
+          SDKMANAGER="$(command -v sdkmanager || find "${ANDROID_HOME}/cmdline-tools" -name sdkmanager -type f | sort -r | head -1)"
+          test -x "${SDKMANAGER}" || {
+            echo "::error::No se encontró sdkmanager"
+            exit 1
+          }
+          yes | "${SDKMANAGER}" --licenses > /dev/null || true
+          "${SDKMANAGER}" --install \
             "platforms;android-37" \
             "build-tools;36.0.0" \
             "platform-tools" \
