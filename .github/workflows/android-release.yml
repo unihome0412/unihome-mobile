@@ -78,10 +78,14 @@ jobs:
           }
           yes | "${SDKMANAGER}" --licenses > /dev/null || true
           "${SDKMANAGER}" --install \
-            "platforms;android-37" \
+            "platforms;android-37.0" \
             "build-tools;36.0.0" \
             "platform-tools" \
             "ndk;27.1.12297006"
+          # AGP resuelve android-37; el paquete actual se instala como android-37.0.
+          if test ! -e "${ANDROID_HOME}/platforms/android-37"; then
+            ln -s "${ANDROID_HOME}/platforms/android-37.0" "${ANDROID_HOME}/platforms/android-37"
+          fi
 
       - name: Preparar caché de Gradle
         uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
