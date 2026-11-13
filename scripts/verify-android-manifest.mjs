@@ -158,7 +158,12 @@ function validateManifest(file) {
     .map((match) => match[0])
     .filter((element) => /android:exported="true"/.test(element))
     .map((element) => element.match(/android:name="([^"]+)"/)?.[1] ?? "(sin nombre)");
-  const allowedExported = new Set([".MainActivity", `${android.package}.MainActivity`]);
+  const allowedExported = new Set([
+    ".MainActivity",
+    `${android.package}.MainActivity`,
+    // Receptor estándar de AndroidX ProfileInstaller (protegido por android.permission.DUMP).
+    "androidx.profileinstaller.ProfileInstallReceiver",
+  ]);
   const unexpected = exported.filter((name) => !allowedExported.has(name));
   if (unexpected.length > 0) {
     fail(`${file}: componentes exportados no aprobados: ${unexpected.join(", ")}`);
