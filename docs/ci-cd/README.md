@@ -13,7 +13,8 @@
 | SDK Android | `compileSdk` 37 generado por Expo SDK 58; `targetSdk` 36 |
 | Node | `22.23.5`, fijado en `.nvmrc`; lockfile v3 |
 | Firma release | Upload key externa; secreto de environment; nunca en Git, caché, reporte o artifact |
-| Publicación | `workflow_dispatch` exclusivamente; gates por environment, variable y confirmación |
+| Publicación | `workflow_dispatch` exclusivamente desde `main`; gates por environment, variables y confirmación |
+| Promoción Play | Reutiliza el `versionCode` ya cargado mediante la API; no vuelve a subir el mismo AAB |
 | Docker / EAS cloud | Prohibidos y no usados |
 
 Fuentes oficiales consultadas el 2026-11-12:
@@ -22,6 +23,7 @@ Fuentes oficiales consultadas el 2026-11-12:
 - Requisito `targetSdk` 36: `https://support.google.com/googleplay/android-developer/answer/11926878`.
 - AGP/Gradle/JDK: `https://developer.android.com/build/releases/gradle-plugin` y `https://docs.gradle.org/current/userguide/compatibility.html`.
 - Play App Signing y pistas: `https://support.google.com/googleplay/android-developer/answer/9842756`.
+- API de pistas y bundles: `https://developers.google.com/android-publisher/api-ref/rest/v3/edits.tracks` y `https://developers.google.com/android-publisher/api-ref/rest/v3/edits.bundles/list`.
 
 Los requisitos de Play pueden cambiar; deben reverificarse antes de publicar.
 
@@ -86,7 +88,7 @@ cd android
 | `ci.yml` | PR/push a `main`, manual | Seis checks obligatorios | Rama protegida |
 | `android-build.yml` | Manual y PR con rutas relevantes | APK debug real, sin secretos | Check opcional, no requerido |
 | `android-release.yml` | Manual desde `main` | AAB firmado y metadata | Environment `android-release`, variable y secretos |
-| `play-publish.yml` | Manual | Mismo AAB a Play | Environments de pista, variables y confirmación |
+| `play-publish.yml` | Manual desde `main` | Mismo AAB a Play, promoción por `versionCode` | Environments de pista, variables, revisores y confirmación |
 | `scheduled-security.yml` | Semanal y manual | SCA y SBOM | Falla ante high/critical |
 
 Los seis nombres que no deben cambiarse:
@@ -100,6 +102,22 @@ Los seis nombres que no deben cambiarse:
 
 `Android APK Debug (sin secretos)` es un séptimo check **opcional**. No debe añadirse a branch protection hasta comprobar estabilidad, duración y costo.
 
+### 3.1 Controles de `play-publish.yml`
+
+1. El job solo se ejecuta con `github.ref == refs/heads/main`; además, el primer paso vuelve a comprobar `WORKFLOW_REF`.
+2. Descarga los metadatos del run de release antes del checkout y guarda los JSON en `RUNNER_TEMP` para que el checkout no los borre.
+3. Hace `actions/checkout` del **head SHA exacto** del run de release, con `persist-credentials: false`. Así `app.json` pertenece al mismo commit que generó el AAB.
+4. Exige que el run sea un `workflow_dispatch` exitoso de `android-release.yml`, de `main` y del repositorio autorizado. Comprueba que el artefacto vigente pertenece a ese run y a ese SHA.
+5. Verifica SHA256, tamaño, package, versionName, versionCode, `runId`, `runAttempt` y `ref` del metadata; después verifica que el AAB tenga firma (`jar verified`, sin entradas sin firmar) y su manifiesto con `bundletool`. El perfil `release` exige `versionCode`, `versionName` y `targetSdk` presentes. La upload key es autofirmada: no se usa `jarsigner -strict`; el release fija el SHA256 del certificado.
+6. Abre un edit de Google Play, comprueba el SHA256 del bundle ya cargado y reutiliza el `versionCode` para asignarlo o promoverlo. Solo sube el AAB si no existe y el destino es una pista de prueba. Nunca sube un AAB nuevo directo a producción.
+7. Para producción exige que el `versionCode` ya esté asignado a una pista de pruebas (excluye `production` y `*:production`) con un lanzamiento `completed` o `inProgress`; `draft` y `halted` no cuentan. El estado por defecto es `draft`, sin `userFraction`; el rollout `inProgress` solo se permite con autorización adicional y una fracción válida.
+8. Si el destino es una pista cerrada, usa el identificador exacto de `PLAY_CLOSED_TRACK`; no asume que se llame `closed`. Rechaza `internal`, `production` y pistas de producción por factor de forma (`*:production`).
+9. Serializa las ejecuciones con `concurrency: play-publish` y escribe el resumen en `RUNNER_TEMP`, no en el checkout, para evitar edits simultáneos y archivos preexistentes.
+
+El workflow no usa `r0adkll/upload-google-play`: esa acción vuelve a subir el archivo en cada ejecución. La promoción se hace con la API de Google Play y `versionCodes`, y las pruebas unitarias cubren la diferencia entre primera carga, asignación y promoción.
+
+> El AAB debe haberse generado en un commit que incluya `scripts/play-release.mjs` y `scripts/verify-play-provenance.mjs`; el workflow hace checkout de ese commit para leer `app.json` y los validadores. No se puede promover un release anterior a esta corrección con el workflow nuevo.
+
 ## 4. Environments de GitHub
 
 Crear manualmente, con revisores obligatorios, restricción a `main` y sin autoaprobación:
@@ -108,7 +126,7 @@ Crear manualmente, con revisores obligatorios, restricción a `main` y sin autoa
 |---|---|---|
 | `android-release` | Build firmado | Upload key y certificado |
 | `play-internal` | Pista interna | Cuenta de servicio Play |
-| `play-closed` | Pista cerrada | Cuenta de servicio Play |
+| `play-closed` | Pista cerrada | Cuenta de servicio Play y `PLAY_CLOSED_TRACK` |
 | `play-production` | Producción | Cuenta de servicio Play y revisor adicional |
 
 Una referencia `environment:` en YAML **no crea protección por sí sola**. Debe configurarse en GitHub y comprobarse con un run que el gate detiene la ejecución.
@@ -127,13 +145,15 @@ Secreto de `play-internal`, `play-closed` y `play-production`:
 
 - `PLAY_SERVICE_ACCOUNT_JSON`
 
-Variables de repositorio, todas deshabilitadas hasta autorización:
+Variables de repositorio o de environment, todas deshabilitadas hasta autorización:
 
 - `RELEASE_BUILD_ENABLED`
 - `PLAY_PUBLISHING_ENABLED`
 - `PLAY_PRODUCTION_ENABLED`
+- `PLAY_PRODUCTION_ROLLOUT_ENABLED` (solo para `production_release=staged`)
+- `PLAY_CLOSED_TRACK` (identificador real de la pista cerrada, no un secreto)
 
-No se creó ningún secreto, keystore, cuenta de servicio ni valor real en este PR.
+No se creó ningún secreto, keystore, cuenta de servicio ni valor real en este PR. Tampoco se crearon los environments protegidos.
 
 ## 6. Activación futura de Google Play
 
@@ -143,8 +163,9 @@ No se creó ningún secreto, keystore, cuenta de servicio ni valor real en este 
 4. Publicar política de privacidad y eliminación de cuenta web; completar Data Safety, acceso de revisión y ficha.
 5. Crear los environments y protegerlos con revisores.
 6. Ejecutar `android-release.yml` desde `main` y conservar AAB, SHA256 y metadata.
-7. Ejecutar `play-publish.yml` con el `release_run_id`, pista y confirmación; usar el **mismo AAB** en todas las pistas.
-8. Antes de producción, revisar el informe previo al lanzamiento y aplicar rollout escalonado.
+7. Ejecutar `play-publish.yml` con el `release_run_id`, `target` y confirmación. Para `closed`, definir `PLAY_CLOSED_TRACK` con el identificador exacto que muestra Play Console. El workflow verifica que `app.json` pertenece al mismo commit del AAB y que el artefacto, SHA256, metadata y `versionCode` coinciden.
+8. Para la primera carga, usar `internal` o `closed`; el workflow sube el AAB solo si el versionCode aún no existe. Para promover, usar el mismo `release_run_id`: reutiliza el bundle ya cargado y actualiza la pista por `versionCode`.
+9. Antes de producción, revisar el informe previo al lanzamiento. Producción exige un versionCode ya probado y queda en `draft` por defecto, sin `userFraction`. Un rollout escalonado (`staged`) exige `PLAY_PRODUCTION_ROLLOUT_ENABLED=true`, confirmación específica y una fracción entre 0 y 1; sigue sujeto a revisión de Play.
 
 La primera publicación no se probó. Si Play Console no está disponible, el bloqueo es externo y no debe simularse.
 
@@ -163,3 +184,4 @@ El repositorio es público y los workflows usan runners estándar de GitHub; no 
 - El gate de manifiesto cubre permisos, tráfico claro, depuración, backup y componentes exportados; no sustituye un análisis del binario.
 - La licencia de dependencias y el análisis estático del AAB quedan pendientes.
 - El APK debug y los runs de GitHub se registran en `EVIDENCIAS.md`; lo no ejecutado se marca como tal.
+- `play-publish.yml` está validado estáticamente y con pruebas unitarias de checkout, provenance, pista, estado y `versionCode`; **no se ejecutó con credenciales ni publicó en Play**. La primera ejecución real seguirá siendo una validación pendiente.

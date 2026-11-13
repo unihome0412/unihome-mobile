@@ -1,6 +1,6 @@
 # INFM-001 — Integración continua (CI) del cliente móvil
 
-**Versión:** 0.2.0 | **Estado:** Implementado parcialmente y ejecutado localmente; aprobación G-M06 pendiente | **Depende de:** `../../constitution.md` (CM-03, CM-08, CM-11, CM-15), `ARQM-006`, ADR-M001, DEC-M03, DEC-M04 | **Lineamientos:** 5, 7, 8 | **Contraparte backend:** `INF-001-ci` y `INF-003` (Propuesto, backend) | **Plantilla:** `plantillas/ci-movil-pr.yml.example`.
+**Versión:** 0.2.0 | **Estado:** Implementado parcialmente; ejecutado localmente y en GitHub; aprobación G-M06 pendiente | **Depende de:** `../../constitution.md` (CM-03, CM-08, CM-11, CM-15), `ARQM-006`, ADR-M001, DEC-M03, DEC-M04 | **Lineamientos:** 5, 7, 8 | **Contraparte backend:** `INF-001-ci` y `INF-003` (Propuesto, backend) | **Plantilla:** `plantillas/ci-movil-pr.yml.example`.
 
 > **Transición 2026-11-12:** el workflow activo vive en `.github/workflows/ci.yml`; la plantilla histórica se conserva como referencia. El CI conserva los seis checks, usa Node `22.23.5`, lockfile, lint, pruebas y validadores. La ejecución en GitHub se registra en `docs/ci-cd/EVIDENCIAS.md`; no se presume verde. G-M06 no está ratificado globalmente.
 

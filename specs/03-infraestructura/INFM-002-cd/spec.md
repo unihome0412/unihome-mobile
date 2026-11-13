@@ -2,7 +2,7 @@
 
 **Versión:** 0.2.0 | **Estado:** Diseño e implementación preparatoria; publicación bloqueada y no ejecutada | **Depende de:** `../../constitution.md` (CM-03, CM-15), `INFM-001`, `INFM-003`, `INFM-004`, `INFM-005`, ADR-M004, DEC-M07 | **Lineamientos:** 8, 11, 16 | **Contraparte backend:** `INF-002-cd` (Propuesto, backend) | **Plantilla:** `plantillas/cd-play.yml.example`.
 
-> **Transición 2026-11-12:** `android-release.yml` genera el AAB firmado y `play-publish.yml` promueve el mismo artefacto. No se crearon credenciales, cuentas, environments protegidos ni lanzamientos. Las plantillas no contienen secretos ni valores reales.
+> **Transición 2026-11-12:** `android-release.yml` genera el AAB firmado y `play-publish.yml` promueve el mismo artefacto. La corrección final hace checkout del commit exacto del AAB, verifica provenance y reutiliza el `versionCode` con la API de Play. No se crearon credenciales, cuentas, environments protegidos ni lanzamientos. Las plantillas no contienen secretos ni valores reales.
 
 ## Estado de implementación (2026-11-12)
 
@@ -10,8 +10,9 @@
 |---|---|
 | Ambientes GitHub | Nombres definidos (`android-release`, `play-internal`, `play-closed`, `play-production`); configuración manual pendiente |
 | AAB firmado | Workflow implementado; **NO EJECUTADO** por falta de keystore y autorización |
-| Mismo artefacto | El publicador descarga el AAB por `release_run_id` y verifica SHA256/metadata |
-| Gates | `workflow_dispatch`, environment, variables y confirmación; falla cerrado por defecto |
+| Mismo artefacto | El publicador descarga el AAB por `release_run_id`, hace checkout del mismo commit, verifica run/SHA256/metadata/versionCode y reutiliza el bundle; no vuelve a subir el mismo AAB |
+| Promoción | API de Play por `versionCode`; solo sube un AAB nuevo a pista interna o cerrada y producción exige un versionCode en un release `completed` o `inProgress` de una pista de pruebas |
+| Gates | `workflow_dispatch` desde `main`, environment, variables, `PLAY_CLOSED_TRACK` cuando aplica y confirmación; falla cerrado por defecto |
 | Play Console | No probado; sin cuenta ni service account |
 | Rollback | Pausar rollout o nueva versión con `versionCode` mayor; no rollback binario |
 

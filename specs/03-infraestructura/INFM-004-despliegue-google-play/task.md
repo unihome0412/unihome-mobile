@@ -2,7 +2,7 @@
 
 **Estado inicial:** 0/7 ejecutadas. **No ejecutar por este paquete.**
 
-**Actualización 2026-11-12:** la automatización de build/publicación está preparada, pero ninguna tarea de Play Console, cuenta, tienda o publicación se ejecutó.
+**Actualización 2026-11-12:** la automatización de build/publicación está preparada, con promoción por `versionCode` y gates de pista/estado; ninguna tarea de Play Console, cuenta, tienda o publicación se ejecutó.
 
 - [ ] **MV-I04-T01** Identificar tipo de cuenta de Play y fecha de creación; registrar si aplica la prueba cerrada. → MV-I04-R01. **Prioridad máxima.**
 - [ ] **MV-I04-T02** Acordar con el docente el criterio de evaluación por Google Play y definir el calendario con margen. → MV-I04-R03, R17.

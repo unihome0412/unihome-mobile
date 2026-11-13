@@ -11,7 +11,7 @@ Documentar la configuración de Google Play Console, la matriz de versionamiento
 
 **Decisión histórica de despliegue (2026-11-05):** la aplicación se mantenía en ejecución **LOCAL** y no se publicaría todavía en Google Play. Se conserva como registro.
 
-**Estado 2026-11-12:** existe workflow de AAB firmado y un publicador manual con environments/gates, pero no se crearon cuenta, credenciales, service account ni lanzamiento. La publicación sigue bloqueada por autorización, secretos y requisitos de Play Console. No se declara compatibilidad de tienda probada.
+**Estado 2026-11-12:** existe workflow de AAB firmado y un publicador manual con environments/gates. El publicador hace checkout del commit exacto del AAB, verifica provenance y promueve por `versionCode` sin volver a subir el mismo bundle; usa `PLAY_CLOSED_TRACK` para la pista cerrada, deja producción en `draft` sin `userFraction` y exige autorización adicional para `staged`. No se crearon cuenta, credenciales, service account ni lanzamiento. La publicación sigue bloqueada por autorización, secretos y requisitos de Play Console. No se declara compatibilidad de tienda probada.
 
 ## 2. Requisitos consolidados (rescatados de `INFM-004`)
 - **Requisitos de tienda (`MV-I04-R01..R18`):** Nivel de API objetivo (`targetSdk` 35/36 según requisito vigente de Google Play Console), formato `.aab`, Play App Signing, política de privacidad pública en la landing, eliminación de cuenta desde la app (`EP-M01-09`) y vía web, declaración de Seguridad de los datos (nombre, correo, fecha de nacimiento, género, credenciales y tokens cifrados en tránsito) y previsión de prueba cerrada (12 testers × 14 días si la cuenta de Play Console es personal posterior a nov-2023).

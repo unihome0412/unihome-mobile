@@ -37,3 +37,14 @@
 - [x] Publicación Play con gates y entorno protegido, deshabilitada por variables ausentes.
 - [x] Sin secretos, keystores, cuentas de servicio ni valores reales en el repositorio.
 - [ ] G-M06: sigue pendiente de ratificación docente global; este PR no la sustituye.
+
+## Corrección final del workflow Play — 2026-11-12
+
+- [x] `play-publish.yml` hace checkout del `head_sha` exacto del run de release antes de leer `app.json` y scripts.
+- [x] Verifica run de `main`, artefacto del mismo run/SHA, metadata, SHA256, tamaño y versionCode; valida firma y manifiesto del AAB.
+- [x] Reutiliza el `versionCode` ya cargado mediante la API; no usa `upload-google-play` ni vuelve a subir el mismo AAB.
+- [x] `closed` usa el identificador real `PLAY_CLOSED_TRACK`; producción queda en `draft` sin `userFraction` y `staged` exige autorización y estado `inProgress`. La promoción solo cuenta releases `completed` o `inProgress` en pistas de pruebas.
+- [x] Firma AAB verificada sin `jarsigner -strict` (upload key autofirmada), exigiendo `jar verified` y rechazando entradas sin firmar; release conserva el pin SHA256 del certificado.
+- [x] Concurrencia de Play serializada y resumen en `RUNNER_TEMP`, sin leer archivos del checkout para el resultado.
+- [x] Pruebas de workflows, promoción y provenance: 30 ejecutadas, 30 correctas; `actionlint` y `format:check` sin hallazgos.
+- [ ] `play-publish.yml` ejecutado con credenciales reales y publicación verificada (NO EJECUTADO; bloqueo externo).

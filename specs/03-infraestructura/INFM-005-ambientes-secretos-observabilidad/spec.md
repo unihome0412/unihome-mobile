@@ -8,7 +8,8 @@
 
 - Environments definidos por nombre: `android-release`, `play-internal`, `play-closed`, `play-production`; su protección debe configurarse y comprobarse en GitHub.
 - Secretos requeridos, solo por nombre: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`, `ANDROID_UPLOAD_CERT_SHA256`, `PLAY_SERVICE_ACCOUNT_JSON`.
-- Variables de habilitación: `RELEASE_BUILD_ENABLED`, `PLAY_PUBLISHING_ENABLED`, `PLAY_PRODUCTION_ENABLED`.
+- Variables de habilitación: `RELEASE_BUILD_ENABLED`, `PLAY_PUBLISHING_ENABLED`, `PLAY_PRODUCTION_ENABLED`, `PLAY_PRODUCTION_ROLLOUT_ENABLED`.
+- Variable de pista cerrada: `PLAY_CLOSED_TRACK` con el identificador real de Play Console; no es un secreto.
 - No hay valores reales en el repositorio ni en el historial. La limpieza del keystore ocurre con `if: always()`.
 - Observabilidad y diagnóstico del cliente siguen sin implementación; no se modificó lógica funcional.
 

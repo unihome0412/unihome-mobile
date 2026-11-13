@@ -7,7 +7,8 @@
 ## Estado 2026-11-12
 
 - `android-release.yml` prepara AAB firmado con secrets y limpieza de keystore; **NO EJECUTADO**.
-- `play-publish.yml` exige environment, variables, service account y confirmación; **NO EJECUTADO**.
+- `play-publish.yml` exige `main`, environment, variables, service account y confirmación; hace checkout del commit del AAB y promueve por `versionCode`; **NO EJECUTADO**.
+- La pista cerrada usa el identificador real `PLAY_CLOSED_TRACK`. Producción queda en `draft` sin `userFraction`; `staged` exige `PLAY_PRODUCTION_ROLLOUT_ENABLED=true`, confirmación específica y estado `inProgress`.
 - No hay política de privacidad, eliminación de cuenta, Data Safety ni cuenta de revisión verificadas.
 - `targetSdk` 36 se valida en el manifiesto generado; la aceptación real de Play no se probó.
 - La primera carga manual y la prueba cerrada de 12 testers/14 días, si aplican, siguen siendo requisitos externos.

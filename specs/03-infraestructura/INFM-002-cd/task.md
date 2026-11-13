@@ -2,7 +2,7 @@
 
 **Estado inicial:** 0/6 ejecutadas. **No ejecutar por este paquete.**
 
-**Actualización 2026-11-12:** los workflows de release y publicación están preparados; las tareas de aprobación, credenciales, environments y prueba con Play siguen abiertas.
+**Actualización 2026-11-12:** los workflows de release y publicación están preparados; el publicador verifica provenance y promueve por `versionCode` sin re-subir el mismo AAB. Las tareas de aprobación, credenciales, environments y prueba con Play siguen abiertas.
 
 - [ ] **MV-I02-T01** Aprobar la matriz de versionamiento y su derivación de `versionCode` (DEC-M07). → MV-I02-R05.
 - [ ] **MV-I02-T02** Definir ambientes protegidos, revisores y regla de autor ≠ aprobador. → MV-I02-R01, R02.

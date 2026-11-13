@@ -29,8 +29,24 @@
 | 2026-11-12 | `npm sbom --sbom-format=cyclonedx --omit=dev` | SBOM CycloneDX 1.5 con 324 componentes |
 | 2026-11-12 | `gitleaks detect` y `gitleaks dir` (v8.30.1, checksum verificado) | 0 fugas; reporte `[]` |
 | 2026-11-12 | `node scripts/verify-android-manifest.mjs --manifest android/app/src/main/AndroidManifest.xml --profile release-source` | Manifiesto fuente válido; permisos peligrosos marcados para eliminación |
+| 2026-11-12 | `npm run test:pipeline` tras la corrección de Play | 30 pruebas de workflows, promoción y provenance; 30 correctas |
+| 2026-11-12 | `node --check` sobre los scripts nuevos de Play | Sin errores de sintaxis |
+| 2026-11-12 | `actionlint` 1.7.12 sobre los cinco workflows | Sin hallazgos |
+| 2026-11-12 | `node scripts/verify-android-manifest.mjs --manifest <sintético> --profile release` | Manifiesto con versionCode/versionName/targetSdk aceptado; manifiesto sin versionCode rechazado; fuente `release-source` sigue válida |
 
 La cobertura no se declara suficiente: solo protege la línea base medida. Las pruebas de UI e integración siguen pendientes.
+
+## Corrección final del workflow Play — 2026-11-12
+
+- `play-publish.yml` ya no usa `r0adkll/upload-google-play`: descarga metadatos del run antes del checkout, hace checkout del `head_sha` exacto del AAB y verifica run, artefacto, SHA256, tamaño, package, versionName, versionCode, `runId`, `runAttempt` y `ref`.
+- La promoción usa un edit de la API de Google Play: reutiliza el bundle si el SHA256 y el versionCode ya existen; solo sube un AAB nuevo a `internal` o `closed`. Un AAB nuevo no se sube directo a producción.
+- `closed` usa `PLAY_CLOSED_TRACK` y comprueba que la pista exista; no asume el nombre `closed`.
+- Producción queda en `draft` por defecto, sin `userFraction`. `staged` exige `PLAY_PRODUCTION_ROLLOUT_ENABLED=true`, confirmación específica y fracción `0 < f < 1`; el estado compatible es `inProgress`. La promoción solo cuenta lanzamientos `completed` o `inProgress` en pistas de pruebas; `draft` y `halted` no acreditan prueba.
+- Se añadieron pruebas de checkout obligatorio, doble guardia de `main`, `tracks` frente a `track`, compatibilidad estado/rollout, promoción por versionCode y correspondencia artefacto/commit.
+- Se corrigió un defecto adicional: `jarsigner -verify -strict` rechaza una upload key autofirmada. Ahora se verifica sin `-strict`, se exige la salida `jar verified` y se rechazan entradas sin firmar; en release se conserva el pin SHA256 del certificado.
+- El validador de manifiesto exige `versionCode`, `versionName` y `targetSdk` en el perfil `release`; se probó con un manifiesto sintético válido y otro sin `versionCode` (rechazado).
+- El resumen de Play se escribe en `RUNNER_TEMP` y no en el checkout, para no leer un archivo preexistente. La concurrencia `play-publish` es única para evitar edits simultáneos.
+- **NO EJECUTADO:** `play-publish.yml` no se ejecutó con credenciales reales. No se generó ni descargó un AAB release en esta corrección, no se creó cuenta de servicio, environment ni secreto, y no se publicó en ninguna pista de Google Play. Los tests usan un cliente falso y una clave RSA efímera; no acreditan una publicación.
 
 ## Build Android local
 

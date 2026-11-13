@@ -135,3 +135,15 @@ Fuente: *Lineamientos para el desarrollo del proyecto Móvil*, cuatrimestre sept
 - **Evidencias:** CI `43311255547` y Android Debug `43311253954` terminaron `success` sobre el head `ecd6960`. APK debug: 189,143,015 bytes, SHA256 `634cce44f300d573491239fa57f0686e3509e2862d954f31e0a2fbbc4089fd50`, targetSdk 36; firma debug no apta para Play. Cobertura, SBOM y Gitleaks se descargaron y verificaron. Detalle en `docs/ci-cd/EVIDENCIAS.md`.
 - **Sin ejecutar:** AAB release firmado y publicación Play. No se crearon credenciales ni environments.
 - **Errores a evitar:** no tratar un YAML valido como run verde; no reutilizar debug keystore para release; no usar secretos reales en PR; no declarar Play probado sin cuenta y autorizacion.
+
+## Correccion final del workflow Play - 2026-11-12
+
+- **Checkout y procedencia:** `play-publish.yml` descarga los metadatos del run antes del checkout, guarda los JSON en `RUNNER_TEMP` para que el checkout no los borre y hace checkout del `head_sha` exacto del AAB. Ya no lee `app.json` del branch actual por accidente.
+- **Concurrencia y resumen:** `play-publish` usa un grupo único para evitar edits simultáneos; el resultado se escribe en `RUNNER_TEMP` para no leer un archivo del checkout.
+- **Promocion:** se reemplazo `r0adkll/upload-google-play` por un cliente de la API de Google Play. Si el `versionCode` ya existe con el mismo SHA256, reutiliza el bundle y actualiza la pista; solo sube un AAB nuevo a `internal` o `closed`. Produccion solo promociona un versionCode ya asignado a una pista de pruebas con release `completed` o `inProgress`; `draft` y `halted` no cuentan.
+- **Produccion:** `draft` es el estado por defecto y no envia `userFraction`; el body omite la fraccion. `staged` solo se permite como `inProgress` con `PLAY_PRODUCTION_ROLLOUT_ENABLED=true`, confirmacion especifica y `0 < userFraction < 1`. Las variables siguen ausentes y la publicacion esta deshabilitada.
+- **Pista cerrada:** se usa `PLAY_CLOSED_TRACK` y se comprueba contra la lista real de pistas; no se asume `closed`.
+- **Firma AAB:** `jarsigner -verify -strict` marcaba como error la upload key autofirmada. Se verifica sin `-strict`, se exige `jar verified`, se rechazan entradas sin firmar y en release se conserva el pin SHA256 del certificado. El manifiesto release exige versionCode, versionName y targetSdk presentes.
+- **Pruebas:** 30 pruebas de workflows, plan de Play y provenance, todas correctas. `actionlint` 1.7.12 y `format:check` sin hallazgos. Los tests usan cliente falso y clave RSA efimera; no acreditan publicacion.
+- **Sin ejecutar:** no se ejecuto `play-publish.yml`, no se creo AAB release, service account, environment ni secreto, y no se publico en Google Play. Los seis checks y el APK debug se revalidan en el PR; no se declara release ni Play verificado.
+- **Errores a evitar:** no comparar el AAB con `app.json` de otro commit; no reutilizar un versionCode con SHA distinto; no enviar `userFraction` con `draft`; no asumir el nombre de una pista cerrada; no usar la accion de upload para promociones; no declarar un run de Play exitoso sin credenciales y cuenta reales.

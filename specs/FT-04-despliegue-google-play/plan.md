@@ -1,7 +1,8 @@
 # Plan — FT-04 despliegue-google-play
 
 **ID:** PLAN-MOV-PLAY-001  
-**Estado:** planificación documentada y automatización preparada; despliegue y publicación **no ejecutados**.  
+**Estado:** planificación documentada y automatización preparada; promoción por `versionCode` con provenance del AAB, despliegue y publicación **no ejecutados**.
+
 **Base:** `spec.md` y `../03-infraestructura/INFM-004-despliegue-google-play/spec.md`.
 
 ## 1. Secuencia documental y de preparación

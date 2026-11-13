@@ -129,7 +129,7 @@ Skills: `comprobar-constitucion-movil`, `auditar-trazabilidad-movil`, `revisar-r
 | DevSecOps | Gitleaks, CodeQL, `npm audit` high/critical, SBOM CycloneDX, validador de workflows y gate de manifiesto |
 | APK debug | `.github/workflows/android-build.yml`; Expo CNG + Gradle, sin secretos de producción |
 | AAB firmado | `.github/workflows/android-release.yml`; manual, environment `android-release`, secretos externos, sin credenciales en el repositorio |
-| Publicación Play | `.github/workflows/play-publish.yml`; manual, gates por variable/secreto y entorno, **no ejecutada** |
+| Publicación Play | `.github/workflows/play-publish.yml`; manual desde `main`, checkout del commit del AAB, provenance y promoción por `versionCode`; **no ejecutada** |
 | Docker / EAS cloud | No utilizados |
 
 Evidencia real del 2026-11-12: CI [`43311255547`](https://github.com/unihome0412/unihome-mobile/actions/runs/43311255547) y APK debug [`43311253954`](https://github.com/unihome0412/unihome-mobile/actions/runs/43311253954), ambos `success` sobre el head `ecd6960`. La reproducción local, los nombres de secretos y la activación de Play están en [`docs/ci-cd/README.md`](docs/ci-cd/README.md); el detalle de artefactos está en [`docs/ci-cd/EVIDENCIAS.md`](docs/ci-cd/EVIDENCIAS.md).
