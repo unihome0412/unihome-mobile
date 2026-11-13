@@ -132,7 +132,23 @@ jobs:
           set -euo pipefail
           AAB="android/app/build/outputs/bundle/release/app-release.aab"
           test -s "$AAB"
-          jarsigner -verify -strict -certs "$AAB"
+          # La upload key es autofirmada: -strict la marcaría como error.
+          # La confianza se establece con el pin SHA256 del certificado de abajo.
+          VERIFY_OUTPUT="$(jarsigner -verify -certs "$AAB")"
+          printf '%s\n' "$VERIFY_OUTPUT"
+          case "$VERIFY_OUTPUT" in
+            *"jar verified"*) ;;
+            *)
+              echo "::error::El AAB no tiene una firma verificable"
+              exit 1
+              ;;
+          esac
+          case "$VERIFY_OUTPUT" in
+            *"jar is unsigned"*|*"unsigned entries"*|*"not signed"*|*"signer errors"*)
+              echo "::error::El AAB contiene entradas sin firmar o errores de firma"
+              exit 1
+              ;;
+          esac
           ACTUAL="$(keytool -printcert -jarfile "$AAB" | sed -n 's/.*SHA256: //p' | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
           EXPECTED="$(printf '%s' "$ANDROID_UPLOAD_CERT_SHA256" | tr -d ':' | tr '[:upper:]' '[:lower:]')"
           test -n "$ACTUAL"

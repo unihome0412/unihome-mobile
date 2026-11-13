@@ -165,14 +165,19 @@ function validateManifest(file) {
   }
 
   const versionCode = xml.match(/android:versionCode="([^"]+)"/)?.[1];
+  const versionName = xml.match(/android:versionName="([^"]+)"/)?.[1];
+  const targetSdk = xml.match(/android:targetSdkVersion="([^"]+)"/)?.[1];
+  if (profile === "release") {
+    if (!versionCode) fail(`${file}: falta android:versionCode en el AAB release`);
+    if (!versionName) fail(`${file}: falta android:versionName en el AAB release`);
+    if (!targetSdk) fail(`${file}: falta android:targetSdkVersion en el AAB release`);
+  }
   if (versionCode && Number(versionCode) !== android.versionCode) {
     fail(`${file}: versionCode ${versionCode} != ${android.versionCode}`);
   }
-  const versionName = xml.match(/android:versionName="([^"]+)"/)?.[1];
   if (versionName && versionName !== appJson.version) {
     fail(`${file}: versionName ${versionName} != ${appJson.version}`);
   }
-  const targetSdk = xml.match(/android:targetSdkVersion="([^"]+)"/)?.[1];
   if (targetSdk && Number(targetSdk) < 36) {
     fail(`${file}: targetSdkVersion ${targetSdk} < 36`);
   }

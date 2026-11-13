@@ -6,6 +6,12 @@ import { parse } from "yaml";
 
 const PINNED_ACTION = /^[^@\s]+@[0-9a-f]{40}$/;
 const SAFE_LOCAL_ACTION = /^\.\/.+/;
+const UPLOAD_GOOGLE_PLAY_ACTION = /^r0adkll\/upload-google-play@/;
+const PLAY_PUBLISH_WORKFLOW = "play-publish.yml";
+const REPOSITORY_FILE_REFERENCE =
+  /(?:^|[\s"'`=])(?:\.\/)?(?:app\.json|package\.json|package-lock\.json|\.nvmrc|scripts\/[\w./-]+|src\/[\w./-]+|__tests__\/[\w./-]+|\.github\/[\w./-]+)/m;
+const RELEASE_STATUSES = new Set(["completed", "draft", "inProgress", "halted"]);
+const SELF_SIGNED_JARSIGNER_STRICT = /jarsigner\s+-verify\b[^\n]*-strict/;
 
 function walk(node, visitor, pathParts = []) {
   if (Array.isArray(node)) {
@@ -23,6 +29,35 @@ function walk(node, visitor, pathParts = []) {
 
 function isEnabled(value) {
   return value === true || value === "true";
+}
+
+function referencesRepositoryFile(step) {
+  return typeof step?.run === "string" && REPOSITORY_FILE_REFERENCE.test(step.run);
+}
+
+function validateUploadGooglePlayStep({ fileName, jobId, step, errors }) {
+  const inputs = step.with ?? {};
+  if (inputs.track !== undefined) {
+    errors.push(`${fileName}: ${jobId} usa el input obsoleto 'track'; debe usar 'tracks'`);
+  }
+  if (typeof inputs.tracks !== "string" || inputs.tracks.trim() === "") {
+    errors.push(`${fileName}: ${jobId} debe declarar 'tracks' para la acción de Play`);
+  }
+
+  const status = inputs.status ?? "completed";
+  if (!RELEASE_STATUSES.has(status)) {
+    errors.push(`${fileName}: ${jobId} usa un estado de Play desconocido: ${status}`);
+  }
+  const fraction = inputs.userFraction ?? inputs["user-fraction"];
+  if (status === "draft" && fraction !== undefined) {
+    errors.push(`${fileName}: ${jobId} no puede enviar userFraction con status: draft`);
+  }
+  if (status === "inProgress" && fraction === undefined) {
+    errors.push(`${fileName}: ${jobId} exige userFraction cuando status es inProgress`);
+  }
+  if (status !== "inProgress" && fraction !== undefined) {
+    errors.push(`${fileName}: ${jobId} solo admite userFraction con status: inProgress`);
+  }
 }
 
 /**
@@ -91,14 +126,69 @@ export function analyzeWorkflow(fileName, content) {
       errors.push(`${fileName}: ${jobId} no puede elevar todos los permisos a write`);
     }
 
+    let checkoutSeen = false;
     for (const step of job.steps ?? []) {
       if (typeof step?.uses === "string" && step.uses.startsWith("actions/checkout@")) {
+        checkoutSeen = true;
         if (step.with?.["persist-credentials"] !== false) {
           errors.push(
             `${fileName}: ${jobId} debe usar persist-credentials: false en actions/checkout`,
           );
         }
       }
+
+      if (referencesRepositoryFile(step) && !checkoutSeen) {
+        errors.push(`${fileName}: ${jobId} usa archivos del repositorio antes de actions/checkout`);
+      }
+
+      if (
+        ["android-release.yml", "play-publish.yml"].includes(fileName) &&
+        typeof step?.run === "string" &&
+        SELF_SIGNED_JARSIGNER_STRICT.test(step.run)
+      ) {
+        errors.push(
+          `${fileName}: ${jobId} no puede usar jarsigner -strict con la upload key autofirmada`,
+        );
+      }
+
+      if (typeof step?.uses === "string" && UPLOAD_GOOGLE_PLAY_ACTION.test(step.uses)) {
+        if (fileName === PLAY_PUBLISH_WORKFLOW) {
+          errors.push(
+            `${fileName}: ${jobId} no puede usar upload-google-play; ` +
+              "la promoción debe reutilizar el versionCode con la API de Play",
+          );
+        }
+        validateUploadGooglePlayStep({ fileName, jobId, step, errors });
+      }
+    }
+  }
+
+  if (fileName === PLAY_PUBLISH_WORKFLOW) {
+    const jobs = Object.entries(workflow.jobs ?? {});
+    const steps = jobs.flatMap(([, job]) => job?.steps ?? []);
+    const hasCheckout = steps.some(
+      (step) => typeof step?.uses === "string" && step.uses.startsWith("actions/checkout@"),
+    );
+    const hasMainJobGuard = jobs.some(
+      ([, job]) => typeof job?.if === "string" && job.if.includes("refs/heads/main"),
+    );
+    const hasMainRunGuard = steps.some(
+      (step) =>
+        typeof step?.run === "string" &&
+        /GITHUB_REF|WORKFLOW_REF/.test(step.run) &&
+        step.run.includes("refs/heads/main"),
+    );
+
+    if (!hasCheckout) {
+      errors.push(`${fileName}: la publicación privilegiada exige actions/checkout`);
+    }
+    if (!hasMainJobGuard) {
+      errors.push(
+        `${fileName}: el job privilegiado debe restringirse con if: github.ref == 'refs/heads/main'`,
+      );
+    }
+    if (!hasMainRunGuard) {
+      errors.push(`${fileName}: debe verificar GITHUB_REF/WORKFLOW_REF contra refs/heads/main`);
     }
   }
 

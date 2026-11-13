@@ -19,7 +19,7 @@
     "verify:android-manifest": "node scripts/verify-android-manifest.mjs",
     "verify:sbom": "node scripts/verify-sbom.mjs",
     "coverage:summary": "node scripts/coverage-summary.mjs",
-    "test:pipeline": "node --test scripts/lib/workflow-security.test.mjs"
+    "test:pipeline": "node --test scripts/lib/workflow-security.test.mjs scripts/lib/play-release.test.mjs scripts/lib/release-provenance.test.mjs"
   },
   "dependencies": {
     "@react-navigation/native": "^7.1.0",
