@@ -11,7 +11,7 @@ Definir el pipeline de integración continua (CI), entrega continua (CD), contro
 
 **Decisión histórica de despliegue (2026-11-05):** la ejecución y verificación del cliente móvil se mantenían en entorno **LOCAL**, sin activar workflows ni publicar. Se conserva como registro.
 
-**Transición autorizada (2026-11-12):** el Scrum Master autorizó un único PR de CI/CD y DevSecOps (`AUT-SM-20261112-CICD-MOVIL`). Estado real: CI de seis checks verificado en el run `43311255547`, APK debug verificado en `43311253954`, AAB firmado preparado, SBOM/SCA/manifiesto ejecutados y publicación Play con gates **no ejecutada**. `G-M06` sigue pendiente.
+**Transición autorizada (2026-11-12):** el Scrum Master autorizó un único PR de CI/CD y DevSecOps (`AUT-SM-20261112-CICD-MOVIL`). Estado real: CI de seis checks verificado en el run `43336338675` (head `ca5d382`), APK debug verificado en `43336338699`, AAB firmado preparado, SBOM/SCA/manifiesto ejecutados y publicación Play con gates **no ejecutada**. `G-M06` sigue pendiente.
 
 ## 2. Requisitos consolidados (rescatados de `INFM-001`, `INFM-002`, `INFM-003` e `INFM-005`)
 - **CI (`MV-I01-R01..R12`):** 9 etapas en orden estricto (preparación con lockfile, tipos y lint, pruebas unitarias `UT-*`, pruebas de integración `IT-*` con API simulada, contrato OpenAPI, configuración sin secretos, seguridad rápida, cobertura y compilación de verificación sin firma). Plantilla inactiva: `../03-infraestructura/plantillas/ci-movil-pr.yml.example`.

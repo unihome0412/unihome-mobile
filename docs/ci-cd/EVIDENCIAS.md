@@ -8,6 +8,7 @@
 - Rama: `feature/mobile-cicd-android-delivery`.
 - Base observada: `cd622ada92928dd7317ec0a1d13a92e3a0e7afb7`.
 - PR: [#11](https://github.com/unihome0412/unihome-mobile/pull/11).
+- Head de código verificado: `ca5d3825cfd4e7bdadcd866ae22ffe397ff2fa3a`.
 - Merge: no realizado.
 - Publicación Google Play: no realizada.
 
@@ -33,6 +34,12 @@
 | 2026-11-12 | `node --check` sobre los scripts nuevos de Play | Sin errores de sintaxis |
 | 2026-11-12 | `actionlint` 1.7.12 sobre los cinco workflows | Sin hallazgos |
 | 2026-11-12 | `node scripts/verify-android-manifest.mjs --manifest <sintético> --profile release` | Manifiesto con versionCode/versionName/targetSdk aceptado; manifiesto sin versionCode rechazado; fuente `release-source` sigue válida |
+| 2026-11-12 | `npm run test:pipeline` (final, tras últimos ajustes) | 30 pruebas, 30 correctas |
+| 2026-11-12 | `npm run typecheck` + `tsc --project __tests__/tsconfig.json --noEmit` | Sin errores |
+| 2026-11-12 | `npm run lint` (final) | Sin errores ni warnings |
+| 2026-11-12 | `npm test -- --ci --runInBand` (final) | 4 suites, 13 pruebas, 13 correctas |
+| 2026-11-12 | `npm run test:coverage -- --runInBand` (final) | 13.43% statements, 7.75% branches, 11.4% functions, 13.94% lines |
+| 2026-11-12 | `npm run format:check`, `npm run verify:workflows`, `actionlint`, `node --check`, `git diff --check` (final) | Sin hallazgos |
 
 La cobertura no se declara suficiente: solo protege la línea base medida. Las pruebas de UI e integración siguen pendientes.
 
@@ -58,10 +65,12 @@ La cobertura no se declara suficiente: solo protege la línea base medida. Las p
 |---|---|---|---|---|
 | CI UniHome Mobile | [`43311255547`](https://github.com/unihome0412/unihome-mobile/actions/runs/43311255547) | `ecd6960168a7cfe1bae2c746cb644ef99ec1272e` | **success** | Cobertura, SCA, SBOM y Gitleaks |
 | Android Debug Build | [`43311253954`](https://github.com/unihome0412/unihome-mobile/actions/runs/43311253954) | `ecd6960168a7cfe1bae2c746cb644ef99ec1272e` | **success** (9m 44s) | APK debug + SHA256 |
+| CI UniHome Mobile | [`43336338675`](https://github.com/unihome0412/unihome-mobile/actions/runs/43336338675) | `ca5d3825cfd4e7bdadcd866ae22ffe397ff2fa3a` | **success** (1m 59s) | Seis checks, cobertura, SCA, SBOM y Gitleaks |
+| Android Debug Build | [`43336338699`](https://github.com/unihome0412/unihome-mobile/actions/runs/43336338699) | `ca5d3825cfd4e7bdadcd866ae22ffe397ff2fa3a` | **success** (11m 17s) | APK debug + SHA256 |
 | Android Release AAB | NO EJECUTADO | — | Bloqueado por secretos/environment y autorización | — |
 | Google Play | NO EJECUTADO | — | Bloqueado por autorización y cuentas | — |
 
-Los seis checks obligatorios y el check opcional de Android concluyeron en `success` sobre el head `ecd6960`. El metadata del APK registró `3d9587c2718dcd786ca1655ac87fbc1c8bb137bf`, SHA de merge propio del evento `pull_request`; el run pertenece al head indicado. Un commit documental posterior no cambia código: los checks se revalidan en cada push y el resultado vigente se consulta en el PR.
+Los seis checks obligatorios y el check opcional de Android concluyeron en `success` sobre el head `ecd6960` y, tras la corrección final, sobre el head `ca5d382` (CI `43336338675`; Android `43336338699`). En el run de Android final, el metadata del APK registró `906bee99103c332af211e0af7dd8c5a9292aafd2`, SHA de merge propio del evento `pull_request`, y `refs/pull/11/merge`; el run pertenece al head `ca5d382`. Un commit documental posterior no cambia código: los checks se revalidan en cada push y el resultado vigente se consulta en el PR.
 
 Artefactos descargados y verificados:
 
@@ -72,7 +81,16 @@ Artefactos descargados y verificados:
 | `sca-sbom-reports` | `13985787519` | 68,161 bytes | Auditorías runtime/completa y SBOM CycloneDX |
 | `gitleaks-report` | `13986237013` | 159 bytes | Reporte JSON `[]` (sin fugas) |
 
-El APK debug se generó con `expo prebuild` y `:app:assembleDebug`; se verificó con `aapt2`: package `mx.unihome.app`, `versionCode=1000000`, `targetSdk=36`. Su firma es **debug y no sirve para Google Play**.
+### Artefactos del run final (2026-11-13)
+
+| Artefacto | ID | Tamaño ZIP | Contenido verificado |
+|---|---:|---:|---|
+| `unihome-debug-apk` | `13998820780` | 60,380,675 bytes | APK de 189,143,039 bytes; SHA256 `5311063b73d8b4d10c6785e73cbe1f200bc05a0eb034c194364b0d0846f93429`; package `mx.unihome.app`, `versionCode=1000000`, `targetSdk=36` |
+| `coverage-report` | `13997995570` | 115,948 bytes | `coverage-summary.json`: 13.43% statements, 7.75% branches, 11.4% functions, 13.94% lines; 4 suites, 13 pruebas |
+| `sca-sbom-reports` | `13995814783` | 68,163 bytes | `npm audit`: 25 hallazgos (6 low, 19 moderate, 0 high, 0 critical); SBOM CycloneDX 1.5 con 353 componentes |
+| `gitleaks-report` | `13996444157` | 159 bytes | Reporte JSON `[]` (sin fugas) |
+
+El APK debug se generó con `expo prebuild` y `:app:assembleDebug`; se verificó con `aapt2`: package `mx.unihome.app`, `versionCode=1000000`, `targetSdk=36`. Su firma es **debug y no sirve para Google Play**. El SHA256 se recalculó localmente tras descargar el artefacto y coincide con `unihome-debug.apk.sha256` y `build-metadata.json`.
 
 ## Bloqueos reales
 

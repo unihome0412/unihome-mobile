@@ -4,6 +4,7 @@
 > Fuente de verdad: `.specify/memory/constitution.md` v1.3.0 (espejo `./constitution.md`); guía operativa: `AGENTS.md`.
 > Estado técnico (2026-11-12): la app React Native existe, el CI conserva sus seis checks y se preparó build Android debug, release firmado y publicación controlada sin ejecutar publicación. `G-M06` sigue pendiente de ratificación docente global.
 > Las afirmaciones históricas de "cero tareas ejecutadas" y "app sin crear" describen el corte del **2026-11-05**; no el estado técnico actual.
+> Evidencia real del 2026-11-13: CI `43336338675` y Android Debug `43336338699` en `success` sobre `ca5d382`; APK debug SHA256 `5311063b...f93429`. La publicación Play sigue sin ejecutar.
 
 ## Alcance de esta entrega
 
@@ -132,7 +133,7 @@ Skills: `comprobar-constitucion-movil`, `auditar-trazabilidad-movil`, `revisar-r
 | Publicación Play | `.github/workflows/play-publish.yml`; manual desde `main`, checkout del commit del AAB, provenance y promoción por `versionCode`; **no ejecutada** |
 | Docker / EAS cloud | No utilizados |
 
-Evidencia real del 2026-11-12: CI [`43311255547`](https://github.com/unihome0412/unihome-mobile/actions/runs/43311255547) y APK debug [`43311253954`](https://github.com/unihome0412/unihome-mobile/actions/runs/43311253954), ambos `success` sobre el head `ecd6960`. La reproducción local, los nombres de secretos y la activación de Play están en [`docs/ci-cd/README.md`](docs/ci-cd/README.md); el detalle de artefactos está en [`docs/ci-cd/EVIDENCIAS.md`](docs/ci-cd/EVIDENCIAS.md).
+Evidencia real del 2026-11-13: CI [`43336338675`](https://github.com/unihome0412/unihome-mobile/actions/runs/43336338675) y APK debug [`43336338699`](https://github.com/unihome0412/unihome-mobile/actions/runs/43336338699), ambos `success` sobre el head `ca5d382` de la corrección. El APK final mide 189,143,039 bytes y su SHA256 es `5311063b73d8b4d10c6785e73cbe1f200bc05a0eb034c194364b0d0846f93429`. La reproducción local, los nombres de secretos y la activación de Play están en [`docs/ci-cd/README.md`](docs/ci-cd/README.md); el detalle de artefactos está en [`docs/ci-cd/EVIDENCIAS.md`](docs/ci-cd/EVIDENCIAS.md).
 
 ## Cómo utilizarlo
 
