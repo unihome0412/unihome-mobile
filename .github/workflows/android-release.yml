@@ -144,7 +144,7 @@ jobs:
               ;;
           esac
           case "$VERIFY_OUTPUT" in
-            *"jar is unsigned"*|*"unsigned entries"*|*"not signed"*|*"signer errors"*)
+            *"jar is unsigned"*|*"unsigned entries"*|*"entry is not signed"*|*"entries are not signed"*|*"signer errors"*)
               echo "::error::El AAB contiene entradas sin firmar o errores de firma"
               exit 1
               ;;
