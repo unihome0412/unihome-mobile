@@ -1,7 +1,7 @@
 ---
-version: 1.2.0
+version: 1.3.0
 ratified: pending
-last_amended: 2026-11-05
+last_amended: 2026-11-12
 status: proposed
 source_of_truth: .specify/memory/constitution.md
 mirror: ./constitution.md
@@ -10,7 +10,7 @@ methodology: SDD
 # Constitución de UniHome Móvil · Arquitectura base del cliente y gobierno SDD
 
 **ID:** UNI-MOV-CONST  
-**Versión:** 1.2.0  
+**Versión:** 1.3.0  
 **Fecha:** 2026-10-29 · **Última enmienda de alcance:** 2026-11-05  
 **Estado:** baseline documental propuesto; enmienda de alcance solicitada por el titular; aprobación académica y del equipo pendiente.  
 **Ámbito:** todos los archivos de este paquete SDD del **proyecto móvil** y sus agentes.  
@@ -153,3 +153,21 @@ Las excepciones **NO** pueden aprobarlas agentes. El equipo **DEBE** documentar:
 - `specs/FT-05-diseno-figma-ui/`: maqueta vigente, inventario y sistema de diseño.
 - `specs/FT-06-primer-ingreso/`: pantallas posteriores al primer ingreso.
 - `specs/01-arquitectura-base/ARQM-001..006`, `docs/` y `tests/`: especificaciones detalladas de arquitectura base, seguridad (`ARQM-002`), ADRs, decisiones y casos de prueba diseñados (0 ejecutados).
+
+## Enmienda parcial 1.3.0 — autorizacion tecnica de CI/CD (2026-11-12)
+
+**Referencia de aprobacion:** `docs/gobierno/AUT-SM-20261112-CICD-MOVIL.md`.
+
+**Causa:** el repositorio ya contiene app y CI ejecutado, mientras la fase documental y los permisos de OpenCode impiden mejoras tecnicas de infraestructura. La autorizacion expresa del Scrum Master habilita CI/CD, DevSecOps y preparacion de build Android en un PR.
+
+**Alcance y excepcion:** CM-03 y CM-11 mantienen su prohibicion general. Unicamente el agente primario `implementador-cicd-movil`, en la rama `feature/mobile-cicd-android-delivery`, puede editar y usar shell con aprobacion por operacion (`ask`) para gobierno SDD, CI/CD, pruebas y build Android. No se autorizan modificaciones funcionales, publicacion, consumo de servicios pagados ni acceso a secretos. El coordinador documental conserva modo lectura.
+
+**Puerta G-M06:** se registra excepcion parcial de equipo aprobada por el Scrum Master para infraestructura CI/CD; **la validacion docente y el cierre global de G-M06 siguen pendientes**. Esta excepcion no equivale a ratificar G-M06, G-M04 ni otros Gates.
+
+**Impacto y archivos afectados:** constitucion canonica y espejo, `AGENTS.md`, `memoria.md`, `CHECKLIST_PR.md`, agente especifico y documento de autorizacion. Los `spec.md`, `plan.md` y `task.md` de FT-03/FT-04 e INFM-001..005 deben ser revisados y reconciliados por el agente **antes de tocar codigo o workflows**. Las tareas solo se marcan cuando efectivamente se ejecuten.
+
+**Riesgos:** modificacion de CI y compilacion Android pueden generar costos de minutos, introducir regresiones o exponer credenciales. **Mitigacion:** permisos `ask` por operacion, restricciones `deny` para secretos y publicacion, no merge, un solo PR y checks existentes obligatorios.
+
+**Responsable y fecha:** Scrum Master de UniHome, autorizacion expresa registrada el 2026-11-12. La ratificacion academica adicional no consta. **Alternativa descartada:** apertura general de permisos o despliegue inmediato.
+
+**Trazabilidad:** conservar las afirmaciones anteriores como registros del corte documental 2026-11-05; registrar por separado commits, runs y ejecuciones posteriores sin fingir resultados.

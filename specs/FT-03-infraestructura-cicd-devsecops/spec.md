@@ -1,15 +1,17 @@
 # FT-03 infraestructura-cicd-devsecops — Integración continua, entrega continua y DevSecOps
 
 **ID:** SPEC-MOV-CICD-001  
-**Versión:** 1.0.0  
-**Estado:** Borrador documental / pendiente de aprobación  
+**Versión:** 1.1.0  
+**Estado:** Implementado parcialmente en CI/CD; aprobación docente/equipo y publicación pendientes  
 **Rector:** `../../.specify/memory/constitution.md` (CM-03, CM-07, CM-08, CM-15)  
 **Specs detalladas rescatadas:** `../03-infraestructura/INFM-001-ci/`, `../03-infraestructura/INFM-002-cd/`, `../03-infraestructura/INFM-003-pipeline-devsecops/`, `../03-infraestructura/INFM-005-ambientes-secretos-observabilidad/` y `../03-infraestructura/plantillas/`.
 
 ## 1. Contexto y objetivo
 Definir el pipeline de integración continua (CI), entrega continua (CD), controles de seguridad DevSecOps y gestión de ambientes/secretos del cliente móvil en **React Native**.
 
-**Decisión confirmada de despliegue actual (2026-11-05):** Por ahora la ejecución y verificación del cliente móvil se mantienen en entorno **LOCAL** consumiendo los endpoints ya implementados; la activación de los workflows y la publicación en tienda quedan diferidas hasta autorización expresa (CM-03).
+**Decisión histórica de despliegue (2026-11-05):** la ejecución y verificación del cliente móvil se mantenían en entorno **LOCAL**, sin activar workflows ni publicar. Se conserva como registro.
+
+**Transición autorizada (2026-11-12):** el Scrum Master autorizó un único PR de CI/CD y DevSecOps (`AUT-SM-20261112-CICD-MOVIL`). Estado real: CI de seis checks verificado en el run `43336338675` (head `ca5d382`), APK debug verificado en `43336338699`, AAB firmado preparado, SBOM/SCA/manifiesto ejecutados y publicación Play con gates **no ejecutada**. `G-M06` sigue pendiente.
 
 ## 2. Requisitos consolidados (rescatados de `INFM-001`, `INFM-002`, `INFM-003` e `INFM-005`)
 - **CI (`MV-I01-R01..R12`):** 9 etapas en orden estricto (preparación con lockfile, tipos y lint, pruebas unitarias `UT-*`, pruebas de integración `IT-*` con API simulada, contrato OpenAPI, configuración sin secretos, seguridad rápida, cobertura y compilación de verificación sin firma). Plantilla inactiva: `../03-infraestructura/plantillas/ci-movil-pr.yml.example`.

@@ -16,3 +16,7 @@ Adelanta la entrega de un primer artefacto instalable (aunque solo cubra F01/F02
 
 ## Criterios de aprobación
 - [ ] Se identifica el tipo de cuenta. - [ ] El docente confirma el criterio de la evaluación. - [ ] Se fija fecha de inicio de la prueba cerrada.
+
+## Nota de implementación (2026-11-12)
+
+Se preparó un publicador manual por pistas internas/cerradas/producción que consume el mismo AAB y falla cerrado sin variables, environment y service account. No se creó cuenta de Play, no se configuraron credenciales y no se ejecutó ninguna publicación. La fecha y el tipo de cuenta siguen sin confirmar.

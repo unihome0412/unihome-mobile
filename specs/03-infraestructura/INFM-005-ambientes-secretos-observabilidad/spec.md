@@ -1,8 +1,17 @@
 # INFM-005 — Ambientes, secretos y observabilidad del cliente móvil
 
-**Versión:** 0.1.0 | **Estado:** Propuesto — requiere aprobación | **Depende de:** `../../constitution.md` (CM-05, CM-07, CM-13, CM-15), `ARQM-002`, `ARQM-004` | **Lineamientos:** 15 (observabilidad, del backend), 16 | **Contraparte backend:** `INF-004-ambientes-secretos-observabilidad` (Propuesto, backend).
+**Versión:** 0.2.0 | **Estado:** Nombres y gates preparados; environments y secretos no configurados | **Depende de:** `../../constitution.md` (CM-05, CM-07, CM-13, CM-15), `ARQM-002`, `ARQM-004` | **Lineamientos:** 15 (observabilidad, del backend), 16 | **Contraparte backend:** `INF-004-ambientes-secretos-observabilidad` (Propuesto, backend).
 
-> Todos los valores de ambiente (direcciones, identificadores, claves) están **en blanco** hasta acuerdo (CM-06, CM-16). No se crean cuentas ni secretos.
+> Todos los valores de ambiente (direcciones, identificadores, claves) están **en blanco** hasta acuerdo (CM-06, CM-16). No se crearon cuentas, secretos ni credenciales.
+
+## Estado 2026-11-12
+
+- Environments definidos por nombre: `android-release`, `play-internal`, `play-closed`, `play-production`; su protección debe configurarse y comprobarse en GitHub.
+- Secretos requeridos, solo por nombre: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`, `ANDROID_UPLOAD_CERT_SHA256`, `PLAY_SERVICE_ACCOUNT_JSON`.
+- Variables de habilitación: `RELEASE_BUILD_ENABLED`, `PLAY_PUBLISHING_ENABLED`, `PLAY_PRODUCTION_ENABLED`, `PLAY_PRODUCTION_ROLLOUT_ENABLED`.
+- Variable de pista cerrada: `PLAY_CLOSED_TRACK` con el identificador real de Play Console; no es un secreto.
+- No hay valores reales en el repositorio ni en el historial. La limpieza del keystore ocurre con `if: always()`.
+- Observabilidad y diagnóstico del cliente siguen sin implementación; no se modificó lógica funcional.
 
 ## Ambientes del cliente
 

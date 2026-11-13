@@ -1,0 +1,300 @@
+name: Google Play - Publicación Controlada
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_run_id:
+        description: "Run ID del workflow Android Release AAB que generó el artefacto"
+        required: true
+        type: string
+      target:
+        description: "Destino; closed usa el identificador real de PLAY_CLOSED_TRACK"
+        required: true
+        type: choice
+        options:
+          - internal
+          - closed
+          - production
+      production_release:
+        description: "Solo producción: draft (sin rollout) o staged (inProgress con fracción)"
+        required: true
+        type: choice
+        default: draft
+        options:
+          - draft
+          - staged
+      user_fraction:
+        description: "Solo production/staged: fracción 0 < f < 1; dejar vacío en draft"
+        required: false
+        type: string
+        default: ""
+      confirm:
+        description: "PUBLICAR | PUBLICAR PRODUCCION (draft) | PUBLICAR PRODUCCION ESCALONADO (staged)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: play-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Promover AAB existente a Google Play (${{ inputs.target }})
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: ${{ inputs.target == 'production' && 'play-production' || inputs.target == 'closed' && 'play-closed' || 'play-internal' }}
+    steps:
+      - name: Verificar rama main, habilitación, entorno y secretos sin imprimir valores
+        env:
+          WORKFLOW_REF: ${{ github.ref }}
+          RELEASE_RUN_ID: ${{ inputs.release_run_id }}
+          TARGET: ${{ inputs.target }}
+          PRODUCTION_RELEASE: ${{ inputs.production_release }}
+          USER_FRACTION: ${{ inputs.user_fraction }}
+          CONFIRM: ${{ inputs.confirm }}
+          PLAY_PUBLISHING_ENABLED: ${{ vars.PLAY_PUBLISHING_ENABLED }}
+          PLAY_PRODUCTION_ENABLED: ${{ vars.PLAY_PRODUCTION_ENABLED }}
+          PLAY_PRODUCTION_ROLLOUT_ENABLED: ${{ vars.PLAY_PRODUCTION_ROLLOUT_ENABLED }}
+          PLAY_CLOSED_TRACK: ${{ vars.PLAY_CLOSED_TRACK }}
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          test "${WORKFLOW_REF}" = "refs/heads/main" || {
+            echo "::error::La publicación solo se autoriza desde main"
+            exit 1
+          }
+          case "${RELEASE_RUN_ID}" in
+            *[!0-9]*|'')
+              echo "::error::release_run_id debe ser numérico"
+              exit 1
+              ;;
+          esac
+          test "${PLAY_PUBLISHING_ENABLED}" = "true" || {
+            echo "::error::Publicación deshabilitada: configure PLAY_PUBLISHING_ENABLED=true solo tras autorización"
+            exit 1
+          }
+          test -n "${PLAY_SERVICE_ACCOUNT_JSON}" || {
+            echo "::error::Falta PLAY_SERVICE_ACCOUNT_JSON en el environment protegido"
+            exit 1
+          }
+
+          case "${TARGET}" in
+            internal|closed)
+              test "${PRODUCTION_RELEASE}" = "draft" || {
+                echo "::error::Solo production puede usar production_release=staged"
+                exit 1
+              }
+              test -z "${USER_FRACTION}" || {
+                echo "::error::Las pistas internas o cerradas no admiten user_fraction"
+                exit 1
+              }
+              test "${CONFIRM}" = "PUBLICAR" || {
+                echo "::error::Confirmación incorrecta"
+                exit 1
+              }
+              if test "${TARGET}" = "closed"; then
+                test -n "${PLAY_CLOSED_TRACK}" || {
+                  echo "::error::Falta PLAY_CLOSED_TRACK: debe ser el identificador real de la pista cerrada"
+                  exit 1
+                }
+              fi
+              ;;
+            production)
+              test "${PLAY_PRODUCTION_ENABLED}" = "true" || {
+                echo "::error::Producción deshabilitada: falta PLAY_PRODUCTION_ENABLED=true"
+                exit 1
+              }
+              case "${PRODUCTION_RELEASE}" in
+                draft)
+                  test -z "${USER_FRACTION}" || {
+                    echo "::error::Un release draft no admite user_fraction"
+                    exit 1
+                  }
+                  test "${CONFIRM}" = "PUBLICAR PRODUCCION" || {
+                    echo "::error::Confirmación de producción incorrecta"
+                    exit 1
+                  }
+                  ;;
+                staged)
+                  test "${PLAY_PRODUCTION_ROLLOUT_ENABLED}" = "true" || {
+                    echo "::error::Rollout deshabilitado: falta PLAY_PRODUCTION_ROLLOUT_ENABLED=true"
+                    exit 1
+                  }
+                  test "${CONFIRM}" = "PUBLICAR PRODUCCION ESCALONADO" || {
+                    echo "::error::Confirmación de rollout escalonado incorrecta"
+                    exit 1
+                  }
+                  node -e '
+                    const value = Number(process.env.USER_FRACTION);
+                    if (!Number.isFinite(value) || value <= 0 || value >= 1) {
+                      console.error("user_fraction debe ser mayor que 0 y menor que 1");
+                      process.exit(1);
+                    }
+                  '
+                  ;;
+                *)
+                  echo "::error::production_release desconocido"
+                  exit 1
+                  ;;
+              esac
+              ;;
+            *)
+              echo "::error::Destino de Play desconocido"
+              exit 1
+              ;;
+          esac
+
+      - name: Obtener run y artefactos autorizados sin depender del checkout actual
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_RUN_ID: ${{ inputs.release_run_id }}
+        run: |
+          set -euo pipefail
+          PROVENANCE_DIR="${RUNNER_TEMP}/play-provenance"
+          mkdir -p "${PROVENANCE_DIR}"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RELEASE_RUN_ID}" \
+            > "${PROVENANCE_DIR}/release-run.json"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RELEASE_RUN_ID}/artifacts?per_page=100" \
+            > "${PROVENANCE_DIR}/release-artifacts.json"
+          HEAD_SHA="$(jq -r '.head_sha // empty' "${PROVENANCE_DIR}/release-run.json")"
+          case "${HEAD_SHA}" in
+            *[!0-9a-f]*|'')
+              echo "::error::El run no contiene un head_sha hexadecimal válido"
+              exit 1
+              ;;
+          esac
+          test "${#HEAD_SHA}" -eq 40 || {
+            echo "::error::El head_sha del run no tiene 40 caracteres"
+            exit 1
+          }
+          echo "head_sha=${HEAD_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout exacto del commit que generó el AAB
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ steps.release.outputs.head_sha }}
+          persist-credentials: false
+
+      - name: Preparar Node fijado por .nvmrc
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Preparar JDK 17 para verificar el AAB
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Descargar el AAB exacto del run autorizado
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: unihome-release-aab
+          run-id: ${{ inputs.release_run_id }}
+          github-token: ${{ github.token }}
+          path: release
+
+      - name: Verificar procedencia, SHA, metadatos y versionCode
+        env:
+          RELEASE_RUN_ID: ${{ inputs.release_run_id }}
+        run: |
+          set -euo pipefail
+          node scripts/verify-play-provenance.mjs \
+            --release-run "${RUNNER_TEMP}/play-provenance/release-run.json" \
+            --artifacts "${RUNNER_TEMP}/play-provenance/release-artifacts.json" \
+            --metadata release/release-metadata.json \
+            --aab release/unihome-release.aab \
+            --sha256-file release/unihome-release.aab.sha256 \
+            --app-json app.json \
+            --expected-run-id "${RELEASE_RUN_ID}" \
+            --repository "${GITHUB_REPOSITORY}" \
+            --artifact-name unihome-release-aab
+
+      - name: Verificar que el AAB descargado está firmado
+        run: |
+          set -euo pipefail
+          test -s release/unihome-release.aab
+          # La upload key es autofirmada y el release ya fijó su SHA256.
+          VERIFY_OUTPUT="$(jarsigner -verify -certs release/unihome-release.aab)"
+          printf '%s\n' "$VERIFY_OUTPUT"
+          case "$VERIFY_OUTPUT" in
+            *"jar verified"*) ;;
+            *)
+              echo "::error::El AAB descargado no tiene una firma verificable"
+              exit 1
+              ;;
+          esac
+          case "$VERIFY_OUTPUT" in
+            *"jar is unsigned"*|*"unsigned entries"*|*"not signed"*|*"signer errors"*)
+              echo "::error::El AAB descargado contiene entradas sin firmar o errores de firma"
+              exit 1
+              ;;
+          esac
+
+      - name: Verificar manifiesto Android del AAB y su versionCode
+        run: |
+          set -euo pipefail
+          curl -sSL -o bundletool.jar \
+            "https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar"
+          echo "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29  bundletool.jar" | sha256sum -c -
+          java -jar bundletool.jar dump manifest \
+            --bundle=release/unihome-release.aab > release-manifest.xml
+          node scripts/verify-android-manifest.mjs --manifest release-manifest.xml --profile release
+
+      - name: Publicar o promover el mismo AAB por versionCode
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          TARGET: ${{ inputs.target }}
+          PRODUCTION_RELEASE: ${{ inputs.production_release }}
+          USER_FRACTION: ${{ inputs.user_fraction }}
+          PLAY_CLOSED_TRACK: ${{ vars.PLAY_CLOSED_TRACK }}
+          RELEASE_RUN_ID: ${{ inputs.release_run_id }}
+          HEAD_SHA: ${{ steps.release.outputs.head_sha }}
+          PLAY_RESULT_PATH: ${{ runner.temp }}/play-result.json
+        run: |
+          set -euo pipefail
+          node scripts/play-release.mjs \
+            --app-json app.json \
+            --aab release/unihome-release.aab \
+            --metadata release/release-metadata.json \
+            --target "${TARGET}" \
+            --production-release "${PRODUCTION_RELEASE}" \
+            --user-fraction "${USER_FRACTION}" \
+            --closed-track "${PLAY_CLOSED_TRACK}" \
+            --expected-commit "${HEAD_SHA}" \
+            --expected-run-id "${RELEASE_RUN_ID}" \
+            --result-json "${PLAY_RESULT_PATH}"
+
+      - name: Resumen sin secretos
+        if: always()
+        env:
+          RELEASE_RUN_ID: ${{ inputs.release_run_id }}
+          HEAD_SHA: ${{ steps.release.outputs.head_sha }}
+          PLAY_RESULT_PATH: ${{ runner.temp }}/play-result.json
+        run: |
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const resultPath = process.env.PLAY_RESULT_PATH;
+          if (!resultPath || !fs.existsSync(resultPath)) process.exit(0);
+          const result = JSON.parse(fs.readFileSync(resultPath, "utf8"));
+          const lines = [
+            `### Google Play: ${result.target}`,
+            `- Run: ${process.env.RELEASE_RUN_ID}`,
+            `- Commit: ${process.env.HEAD_SHA}`,
+            `- AAB: versionCode ${result.versionCode} (${result.versionName})`,
+            `- Pista: ${result.trackName}`,
+            `- Estado: ${result.status}`,
+            `- Subido en esta ejecución: ${result.uploaded}`,
+            `- Reutilizado por versionCode: ${result.reused}`,
+            `- Rollout: ${result.status === "inProgress" ? result.userFraction : "no aplica"}`,
+            `- Producción: ${result.status === "draft" ? "draft, no servido" : result.status}`,
+          ];
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${lines.join("\n")}\n`);
+          NODE

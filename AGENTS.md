@@ -1,8 +1,9 @@
+> **ENMIENDA VIGENTE DE CI/CD (2026-11-12):** la autorizacion de Scrum Master se registra en `docs/gobierno/AUT-SM-20261112-CICD-MOVIL.md` y en la constitucion v1.3.0. El agente `implementador-cicd-movil` puede realizar exclusivamente CI/CD, DevSecOps, pruebas y build Android en un PR con aprobacion `ask` por operacion. La prohibicion de ejecutar de este documento sigue vigente para el coordinador documental, los demas agentes y cualquier trabajo fuera de la excepcion. G-M06 sigue pendiente de ratificacion docente general. Toda afirmacion antigua de "cero tareas" describe el corte del 2026-11-05, NO el estado tecnico actual. Antes de cambiar codigo o workflows, reconciliar spec/plan/task de FT-03/FT-04 e INFM-001..005 con los cambios ya presentes.
 # AGENTS.md — UniHome Móvil (SDD)
 
 > Rector: `.specify/memory/constitution.md` (espejo `./constitution.md`). Ante conflicto, manda la constitución (CM-01).
 > Este archivo dice cómo trabajar; la constitución dice qué no se negocia.
-> Fase actual: documentación de arquitectura base y features funcionales. **Cero tareas ejecutadas.** `G-M06` sigue pendiente.
+> **Estado técnico (2026-11-12):** la app React Native existe; el CI conserva sus seis checks; el build Android debug, el AAB firmado y la publicación Play están preparados sin publicar. Las frases históricas "cero tareas" y "app sin crear" corresponden al corte del **2026-11-05**. `G-M06` sigue pendiente de ratificación docente global.
 
 ## 1. Forma de trabajo
 
@@ -33,7 +34,9 @@ Máx. ~10000 líneas. Si una lección se vuelve regla, moverla a este archivo. N
 
 ## 3. Límites — no hacer
 
-- No implementar, no usar shell, no generar proyectos (incluidos React Native o Expo), no instalar paquetes, no compilar, no probar, no desplegar ni publicar.
+> **Excepción CI/CD:** el agente `implementador-cicd-movil` puede editar y ejecutar exclusivamente lo descrito en la enmienda 1.3.0 y en `docs/gobierno/AUT-SM-20261112-CICD-MOVIL.md`. Los límites siguientes siguen vigentes para el coordinador, los subagentes y cualquier trabajo funcional.
+
+- No implementar, no usar shell, no generar proyectos (incluidos React Native o Expo), no instalar paquetes, no compilar, no probar, no desplegar ni publicar, salvo la excepción CI/CD autorizada.
 - No marcar casillas de `task.md`, no crear código y no hacer commits.
 - No introducir pantallas, flujos, endpoints ni reglas de negocio en `FT-00`. En `FT-01`…`FT-06` solo se documentan si salen de la maqueta o del contrato; no inventar endpoints.
 - No leer, mostrar ni copiar archivos de entorno, credenciales, claves o configuraciones reales.
@@ -46,7 +49,7 @@ Máx. ~10000 líneas. Si una lección se vuelve regla, moverla a este archivo. N
 - `plan.md` derivado de `spec.md` y `task.md` con tareas atómicas en `[ ]`.
 - Trazabilidad completa requisito → fase → tarea; sin requisitos sin tarea ni tareas huérfanas (CM-10).
 - Checklist de `specs/FT-0X-<nombre>/checklists/checklist.md` resuelto en modo documental.
-- `CHECKLIST_PR.md` resuelto en modo documental, sin gates técnicos todavía.
+- `CHECKLIST_PR.md` resuelto en su parte documental y con evidencia técnica CI/CD cuando exista; no se marcan gates no ejecutados.
 - Coherencia con CM-01…CM-16 y alineación con el backend registrada (CM-14).
 - Cero resultados ficticios: no se afirma compilación, prueba, auditoría, publicación ni despliegue (CM-08).
 
@@ -64,19 +67,19 @@ Máx. ~10000 líneas. Si una lección se vuelve regla, moverla a este archivo. N
 - El dispositivo y el paquete de la app son **no confiables**; sin secretos ni credenciales privilegiadas en el cliente (CM-05, CM-07).
 - Deny-list de lectura: `*.env`, `*.env.*`, `keys.properties`, `local.properties`, `*.jks`, `*.keystore`, `SIGNING_*`, `KEYSTORE_*`.
 - Almacenamiento seguro para credenciales de sesión; mínimo privilegio; tráfico cifrado; registros sin datos sensibles.
-- SAST, análisis de dependencias y CI/CD son **futuros** y requieren autorización; no se configuran ni ejecutan en esta fase.
+- SAST, análisis de dependencias y CI/CD están **implementados en el PR de infraestructura**: CodeQL, Gitleaks, SCA, SBOM, gate de manifiesto y validación de workflows. Su ejecución se registra en `docs/ci-cd/EVIDENCIAS.md`; no se declaran verdes sin run.
 
-## 7. Testing (futuro)
+## 7. Testing
 
-Solo se enuncia estrategia, sin ejecutar. Unitarias, integración, seguridad y extremo a extremo figuran como **No ejecutadas** (ARM-015). Jest + React Native Testing Library es una **Propuesta** (MM-108); e2e está por definir. Prohibido afirmar cobertura o resultados.
+El CI ejecuta toda prueba Jest real disponible. Estado 2026-11-12: **13 pruebas de seguridad ejecutadas**, cobertura global medida y umbral mínimo contra regresión. Pruebas de UI, integración y extremo a extremo siguen **pendientes** (ARM-015); Jest + React Native Testing Library continúa como **Propuesta** (MM-108). Prohibido afirmar cobertura o resultados no medidos.
 
 ## 8. Observabilidad mínima (diseño futuro)
 
 Logger sanitizado y `CorrelationId` por operación como principios de diseño; sin PII ni tokens en registros. Proveedor de diagnóstico **por definir** (MM-206). No se implementa nada en esta fase.
 
-## 9. Operación manual — sin hosting aún
+## 9. Operación CI/CD y Play
 
-Entornos, CI/CD y firma están **por definir** (MM-204). La matriz de versionamiento es obligatoria antes de desarrollar (MM-207). La publicación en Google Play es futura; debe verificarse con las políticas vigentes al momento de ejecutar (CM-15). No hay despliegues ni credenciales en este paquete.
+La ruta de build y firma está **implementada sin ejecutar publicación**: Expo CNG + Gradle, AAB con upload key externa y gates de Play. Los environments y secretos deben configurarse manualmente; no hay credenciales en el repositorio. La publicación sigue bloqueada hasta autorización expresa y verificación de las políticas vigentes de Google Play (CM-15). La matriz de versionamiento se conserva (MM-207).
 
 ## 10. Lecciones
 
@@ -86,6 +89,7 @@ Fuente: `memoria.md`. Si una lección se vuelve regla, moverla a este archivo. N
 
 Definiciones: `.opencode/agents/*.md` (`mode: primary` o `mode: subagent`). Todos leen constitución + `AGENTS.md` + `memoria.md` antes de actuar. Ninguno guarda secretos ni toca archivos de entorno o firma.
 
+- `implementador-cicd-movil` — primario; única excepción de ejecución, limitada a CI/CD, DevSecOps, pruebas y build Android con aprobación por operación.
 - `coordinador-sdd-movil` — primario; coordina análisis documental y delega revisiones acotadas.
 - `arquitecto-movil` — capas, fronteras y decisiones de arquitectura base.
 - `auditor-sdd-movil` — trazabilidad, alcance y prohibición de ejecutar.
@@ -102,6 +106,9 @@ Definiciones: `.opencode/skills/*/SKILL.md` (`name` = directorio, kebab-case).
 - `auditar-trazabilidad-movil` — revisa ARM → FM → TM y estados `[ ]`.
 - `revisar-riesgos-movil` — inspecciona riesgos RM-01…RM-10 y decisiones.
 - `verificar-alineacion-backend` — compara decisiones y acuerdos con backend.
+- `revisar-pipeline-play` — revisa inactividad, secretos, permisos, SHA y requisitos de Play.
+- `revisar-contrato-cliente` — verifica contrato, URLs y DTOs propuestos.
+- `guardian-adr-movil` — exige ADR para decisiones técnicas y evita aprobaciones ficticias.
 
 Skills de implementación (React Native, estado, DI, pruebas, DevSecOps, cliente API, sesión) quedan **reservadas** y no se crean hasta que se autorice la etapa funcional. Ante conflicto, manda la constitución.
 
@@ -121,4 +128,6 @@ Skills de implementación (React Native, estado, DI, pruebas, DevSecOps, cliente
 | Gate de revisión | `CHECKLIST_PR.md` | Checklist documental y gates técnicos reservados |
 | Subagentes | `.opencode/agents/` | Perfiles `mode: primary/subagent` |
 | Skills | `.opencode/skills/` | Procedimientos de revisión |
-| Código de app | — | **No creado**: fuera de alcance |
+| Código de app | `src/`, `App.tsx`, `index.ts` | Creado; cambios funcionales fuera del alcance de este PR |
+| Workflows y scripts | `.github/workflows/`, `scripts/` | CI/CD, validadores y build Android |
+| Runbook de entrega | `docs/ci-cd/` | Reproducción, entornos, secretos por nombre y evidencias |

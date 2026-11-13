@@ -1,8 +1,17 @@
 # INFM-004 — Despliegue y publicación en Google Play
 
-**Versión:** 0.1.0 | **Estado:** Propuesto — requiere aprobación | **Depende de:** `../../constitution.md` (CM-07, CM-15), `INFM-002`, `INFM-005`, ADR-M004, ADR-M005 | **Lineamientos:** 1 (evaluación inicia descargando la app de Google Play), 16, 19 | **Decisiones:** DEC-M01 (URGENTE), DEC-M10, DEC-M02 | **Riesgos:** THM-13, RM-08, RC-06.
+**Versión:** 0.2.0 | **Estado:** Preparado documental y técnicamente; publicación no ejecutada ni probada con Play | **Depende de:** `../../constitution.md` (CM-07, CM-15), `INFM-002`, `INFM-005`, ADR-M004, ADR-M005 | **Lineamientos:** 1 (evaluación inicia descargando la app de Google Play), 16, 19 | **Decisiones:** DEC-M01 (URGENTE), DEC-M10, DEC-M02 | **Riesgos:** THM-13, RM-08, RC-06.
 
-> No se crea cuenta, aplicación ni lanzamiento (CM-03). Los requisitos de la tienda cambian: la fila «Verificado» indica fuente oficial y fecha; todo lo demás **se verifica al ejecutar** (CM-15).
+> No se creó cuenta, aplicación ni lanzamiento. El workflow de publicación existe con gates, pero no se ejecutó. Los requisitos de la tienda cambian: la fila «Verificado» indica fuente oficial y fecha; todo lo demás **se verifica al ejecutar** (CM-15).
+
+## Estado 2026-11-12
+
+- `android-release.yml` prepara AAB firmado con secrets y limpieza de keystore; **NO EJECUTADO**.
+- `play-publish.yml` exige `main`, environment, variables, service account y confirmación; hace checkout del commit del AAB y promueve por `versionCode`; **NO EJECUTADO**.
+- La pista cerrada usa el identificador real `PLAY_CLOSED_TRACK`. Producción queda en `draft` sin `userFraction`; `staged` exige `PLAY_PRODUCTION_ROLLOUT_ENABLED=true`, confirmación específica y estado `inProgress`.
+- No hay política de privacidad, eliminación de cuenta, Data Safety ni cuenta de revisión verificadas.
+- `targetSdk` 36 se valida en el manifiesto generado; la aceptación real de Play no se probó.
+- La primera carga manual y la prueba cerrada de 12 testers/14 días, si aplican, siguen siendo requisitos externos.
 
 ## 1. Requisitos de tienda verificados el 2026-11-03
 

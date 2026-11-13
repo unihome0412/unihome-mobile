@@ -1,0 +1,133 @@
+name: Android Debug Build
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/android-build.yml"
+      - "App.tsx"
+      - "app.json"
+      - "index.ts"
+      - "package-lock.json"
+      - "package.json"
+      - "scripts/**"
+      - "src/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-debug-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-debug:
+    name: Android APK Debug (sin secretos)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout sin credenciales persistentes
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Preparar Node fijado por .nvmrc
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Preparar JDK 17 para AGP 9
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Instalar plataforma 37, Build Tools 36 y NDK compatible
+        run: |
+          set -euo pipefail
+          test -n "${ANDROID_HOME:-}" || {
+            echo "::error::ANDROID_HOME no está definido en el runner"
+            exit 1
+          }
+          SDKMANAGER="$(command -v sdkmanager || find "${ANDROID_HOME}/cmdline-tools" -name sdkmanager -type f | sort -r | head -1)"
+          test -x "${SDKMANAGER}" || {
+            echo "::error::No se encontró sdkmanager"
+            exit 1
+          }
+          yes | "${SDKMANAGER}" --licenses > /dev/null || true
+          "${SDKMANAGER}" --install \
+            "platforms;android-37.0" \
+            "build-tools;36.0.0" \
+            "platform-tools" \
+            "ndk;27.1.12297006"
+          # AGP resuelve android-37; el paquete actual se instala como android-37.0.
+          if test ! -e "${ANDROID_HOME}/platforms/android-37"; then
+            ln -s "${ANDROID_HOME}/platforms/android-37.0" "${ANDROID_HOME}/platforms/android-37"
+          fi
+
+      - name: Preparar caché de Gradle
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
+
+      - name: Instalar dependencias con lockfile
+        run: npm ci --legacy-peer-deps
+
+      - name: Generar proyecto Android con Expo CNG
+        run: npx expo prebuild --platform android --clean --no-install
+        env:
+          CI: "1"
+          EXPO_NO_GIT_STATUS: "1"
+
+      - name: Verificar manifiesto fuente sin permisos peligrosos
+        run: node scripts/verify-android-manifest.mjs --manifest android/app/src/main/AndroidManifest.xml --profile release-source
+
+      - name: Compilar APK debug real con Gradle
+        working-directory: android
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Verificar APK con aapt2 y reglas de seguridad
+        run: node scripts/verify-android-manifest.mjs --apk android/app/build/outputs/apk/debug/app-debug.apk --profile debug
+
+      - name: Registrar tamaño, SHA256 y metadatos del APK
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/unihome-debug.apk
+          sha256sum artifacts/unihome-debug.apk | tee artifacts/unihome-debug.apk.sha256
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const stat = fs.statSync("artifacts/unihome-debug.apk");
+          fs.writeFileSync(
+            "artifacts/build-metadata.json",
+            JSON.stringify(
+              {
+                kind: "debug-apk",
+                apk: "unihome-debug.apk",
+                sizeBytes: stat.size,
+                sha256: fs.readFileSync("artifacts/unihome-debug.apk.sha256", "utf8").split(/\s+/)[0],
+                commit: process.env.GITHUB_SHA,
+                ref: process.env.GITHUB_REF,
+                runId: process.env.GITHUB_RUN_ID,
+                generatedAt: new Date().toISOString(),
+              },
+              null,
+              2,
+            ) + "\n",
+          );
+          NODE
+          {
+            echo "### APK debug Android"
+            echo "- Tamaño: $(stat -c '%s' artifacts/unihome-debug.apk) bytes"
+            echo "- SHA256: $(cut -d' ' -f1 artifacts/unihome-debug.apk.sha256)"
+            echo "- Commit: ${GITHUB_SHA}"
+            echo "- Firma: debug. **No sirve para Google Play.**"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar APK debug y evidencia
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: unihome-debug-apk
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 7

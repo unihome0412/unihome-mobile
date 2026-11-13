@@ -112,3 +112,38 @@ Fuente: *Lineamientos para el desarrollo del proyecto Móvil*, cuatrimestre sept
 - Una propuesta pasa a **Confirmada** solamente con decisión humana identificable y fechada.
 - Si una decisión contradice CM-01…CM-16, actualizar **primero** `constitution.md` por gobierno de cambios; después sincronizar documentos.
 - No interpretar este archivo como autorización para implementar.
+
+## Actualizacion de gobierno — 2026-11-12 (autorizacion CI/CD)
+
+- **Autoridad:** Scrum Master de UniHome, autorizacion expresa de alcance CI/CD registrada en `docs/gobierno/AUT-SM-20261112-CICD-MOVIL.md`.
+- **Decision:** permitir un unico PR de CI/CD, DevSecOps y build Android sin publicacion, gastos, Docker, backend ni cambios funcionales.
+- **Constitucion:** enmienda parcial 1.3.0, sin falsificar ratificacion docente. G-M06 permanece PENDIENTE globalmente, con excepcion de equipo limitada a CI/CD; G-M04 conserva su historia.
+- **Permisos:** nuevo agente `implementador-cicd-movil` con `edit/shell: ask`; agente coordinador permanece de solo lectura. `opencode.jsonc` mantiene los bloqueos generales; la regla especifica del agente se aplica despues.
+- **Causa:** el corte documental del 2026-11-05 ya no refleja codigo ni CI reales. Deben reconciliarse README, AGENTS, specs y task de infraestructura durante el PR.
+- **Estado en esta entrada:** solo se autoriza y habilita gobierno. NO se presume CI nuevo, APK, AAB, ejecucion, PR ni publicacion.
+- **Responsable:** Scrum Master de UniHome. **Fecha:** 2026-11-12.
+
+## Implementacion CI/CD movil — 2026-11-12
+
+- **Rama:** `feature/mobile-cicd-android-delivery`, desde `cd622ada92928dd7317ec0a1d13a92e3a0e7afb7`. Un solo PR; sin merge.
+- **CI:** se conservaron los seis nombres de check. Se fijo Node `22.23.5` (`.nvmrc`), se agrego lint ESLint, formato de infraestructura, validacion de workflows y pruebas del validador.
+- **Pruebas:** 13 pruebas Jest de seguridad ejecutadas localmente. Cobertura global medida: 13.43% statements, 7.75% branches, 11.4% functions, 13.94% lines; umbral minimo 13/7/11/13 para impedir regresion. No se declara cobertura suficiente ni 80%.
+- **DevSecOps:** Gitleaks con historial completo, CodeQL, `npm audit` high/critical, SBOM CycloneDX, gate de manifiesto Android y validacion de SHA/permisos de workflows. Auditoria local: 0 high, 0 critical, 6 low, 17 moderate; el run final de CI reporto 25 hallazgos (6 low, 19 moderate, 0 high, 0 critical) y SBOM con 353 componentes.
+- **Android:** workflow `android-build.yml` con Expo CNG + Gradle, JDK 17, SDK 37/Build Tools 36/NDK 27.1.12297006, APK debug sin secretos. Workflow `android-release.yml` manual con AAB firmado por secretos de environment y limpieza de keystore. No se ejecuto build nativo local por ausencia de Java.
+- **CD:** `play-publish.yml` manual, consume el mismo AAB por `release_run_id`, exige variables, secreto de service account, environment y confirmacion. No se ejecuto ni se publico.
+- **Documentacion:** README, AGENTS, CHECKLIST_PR, FT-03/FT-04, INFM-001..005 y ADR-M004/M005 reconciliados. Historia anterior conservada; `G-M06` sigue PENDIENTE.
+- **Evidencias:** CI `43336338675` y Android Debug `43336338699` terminaron `success` sobre el head `ca5d382` de la corrección. APK debug: 189,143,039 bytes, SHA256 `5311063b73d8b4d10c6785e73cbe1f200bc05a0eb034c194364b0d0846f93429`, targetSdk 36; metadata de merge `906bee99103c332af211e0af7dd8c5a9292aafd2` y `refs/pull/11/merge`; firma debug no apta para Play. Cobertura, SCA, SBOM y Gitleaks se descargaron y verificaron: 13.43% statements, 25 hallazgos (0 high/critical), 353 componentes y reporte Gitleaks `[]`. Detalle en `docs/ci-cd/EVIDENCIAS.md`.
+- **Sin ejecutar:** AAB release firmado y publicación Play. No se crearon credenciales ni environments.
+- **Errores a evitar:** no tratar un YAML valido como run verde; no reutilizar debug keystore para release; no usar secretos reales en PR; no declarar Play probado sin cuenta y autorizacion.
+
+## Correccion final del workflow Play - 2026-11-12
+
+- **Checkout y procedencia:** `play-publish.yml` descarga los metadatos del run antes del checkout, guarda los JSON en `RUNNER_TEMP` para que el checkout no los borre y hace checkout del `head_sha` exacto del AAB. Ya no lee `app.json` del branch actual por accidente.
+- **Concurrencia y resumen:** `play-publish` usa un grupo único para evitar edits simultáneos; el resultado se escribe en `RUNNER_TEMP` para no leer un archivo del checkout.
+- **Promocion:** se reemplazo `r0adkll/upload-google-play` por un cliente de la API de Google Play. Si el `versionCode` ya existe con el mismo SHA256, reutiliza el bundle y actualiza la pista; solo sube un AAB nuevo a `internal` o `closed`. Produccion solo promociona un versionCode ya asignado a una pista de pruebas con release `completed` o `inProgress`; `draft` y `halted` no cuentan.
+- **Produccion:** `draft` es el estado por defecto y no envia `userFraction`; el body omite la fraccion. `staged` solo se permite como `inProgress` con `PLAY_PRODUCTION_ROLLOUT_ENABLED=true`, confirmacion especifica y `0 < userFraction < 1`. Las variables siguen ausentes y la publicacion esta deshabilitada.
+- **Pista cerrada:** se usa `PLAY_CLOSED_TRACK` y se comprueba contra la lista real de pistas; no se asume `closed`.
+- **Firma AAB:** `jarsigner -verify -strict` marcaba como error la upload key autofirmada. Se verifica sin `-strict`, se exige `jar verified`, se rechazan entradas sin firmar y en release se conserva el pin SHA256 del certificado. El manifiesto release exige versionCode, versionName y targetSdk presentes.
+- **Pruebas:** 30 pruebas de workflows, plan de Play y provenance, todas correctas. `actionlint` 1.7.12 y `format:check` sin hallazgos. Los tests usan cliente falso y clave RSA efimera; no acreditan publicacion.
+- **Sin ejecutar:** no se ejecuto `play-publish.yml`, no se creo AAB release, service account, environment ni secreto, y no se publico en Google Play. Los seis checks y el APK debug quedaron verificados en el run final; no se declara release ni Play verificado.
+- **Errores a evitar:** no comparar el AAB con `app.json` de otro commit; no reutilizar un versionCode con SHA distinto; no enviar `userFraction` con `draft`; no asumir el nombre de una pista cerrada; no usar la accion de upload para promociones; no declarar un run de Play exitoso sin credenciales y cuenta reales.

@@ -44,6 +44,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
 
   useEffect(() => {
     if (route.params?.prefillEmail) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sincronización puntual con parámetros de navegación
       setEmail(route.params.prefillEmail);
     }
     if (route.params?.confirmedMessage) {

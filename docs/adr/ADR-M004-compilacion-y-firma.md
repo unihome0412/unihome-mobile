@@ -16,3 +16,7 @@ Define plantillas de INFM-002, el inventario de secretos de INFM-005 y los minut
 
 ## Criterios de aprobación
 - [ ] Se verifican cuotas y costos vigentes. - [ ] Revisor de seguridad valida la custodia de llaves.
+
+## Nota de implementación (2026-11-12)
+
+Se implementó la alternativa **B** como preparación: Expo Prebuild + Gradle en GitHub Actions, AAB firmado con upload key leída de un environment protegido y borrada al terminar. El workflow no se ejecutó por falta de keystore y autorización; la decisión formal y la verificación de costos siguen pendientes. No se creó ninguna llave ni se publicó en Play.

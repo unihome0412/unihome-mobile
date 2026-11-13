@@ -4,8 +4,6 @@
     "strict": true,
     "types": ["jest", "node"]
   },
-  "include": [
-    "**/*"
-  ],
+  "include": ["**/*"],
   "exclude": []
 }

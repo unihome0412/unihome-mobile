@@ -18,71 +18,126 @@ jobs:
   static-analysis:
     name: Análisis Estático y Tipos
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
+      - name: Checkout sin credenciales persistentes
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          node-version: 20
-          cache: 'npm'
+          persist-credentials: false
+      - name: Preparar Node fijado por .nvmrc
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
       - name: Instalar dependencias con lockfile
         run: npm ci --legacy-peer-deps
       - name: Verificación estática TypeScript (App)
-        run: npx tsc --noEmit
+        run: npm run typecheck
       - name: Verificación estática TypeScript (Tests)
         run: npx tsc --project __tests__/tsconfig.json --noEmit
+      - name: Lint con errores bloqueantes
+        run: npm run lint
+      - name: Verificación de formato de infraestructura y configuración
+        run: npm run format:check
+      - name: Validar reglas de seguridad de workflows
+        run: npm run verify:workflows
+      - name: Probar validador de workflows
+        run: npm run test:pipeline
+      - name: Resumen de toolchain
+        run: |
+          {
+            echo "### Toolchain de CI"
+            echo "- Node: $(node --version)"
+            echo "- npm: $(npm --version)"
+            echo "- Commit: ${GITHUB_SHA}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   security-tests:
     name: Pruebas de Seguridad y Cobertura
     needs: static-analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
+      - name: Checkout sin credenciales persistentes
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          node-version: 20
-          cache: 'npm'
+          persist-credentials: false
+      - name: Preparar Node fijado por .nvmrc
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
       - name: Instalar dependencias con lockfile
         run: npm ci --legacy-peer-deps
-      - name: Pruebas unitarias de seguridad Jest con cobertura
-        run: npm run test:security -- --ci --coverage
-      - name: Subir reporte de cobertura como artefacto
+      - name: Ejecutar toda prueba Jest real con cobertura y umbral medido
+        run: npm run test:coverage -- --runInBand
+      - name: Verificar y resumir reporte de cobertura
+        run: |
+          test -s coverage/lcov.info
+          node scripts/coverage-summary.mjs
+      - name: Subir cobertura como artefacto obligatorio
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: coverage-report
           path: coverage/
-          if-no-files-found: ignore
+          if-no-files-found: error
           retention-days: 7
 
   dependency-scan:
     name: Auditoría de Dependencias (SCA)
-    needs: static-analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
+      - name: Checkout sin credenciales persistentes
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          node-version: 20
-          cache: 'npm'
+          persist-credentials: false
+      - name: Preparar Node fijado por .nvmrc
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
       - name: Instalar dependencias con lockfile
         run: npm ci --legacy-peer-deps
-      - name: Escaneo de vulnerabilidades npm audit
-        run: npm audit --omit=dev --audit-level=high
+      - name: Generar reportes de auditoría runtime y completa
+        run: |
+          set -euo pipefail
+          mkdir -p reports
+          npm audit --json > reports/npm-audit-all.json || true
+          npm audit --omit=dev --json > reports/npm-audit-runtime.json || true
+      - name: Bloquear vulnerabilidades high/critical
+        run: |
+          set -euo pipefail
+          node scripts/check-npm-audit.mjs reports/npm-audit-all.json
+          node scripts/check-npm-audit.mjs reports/npm-audit-runtime.json
+      - name: Generar SBOM CycloneDX desde dependencias resueltas
+        run: npm sbom --sbom-format=cyclonedx --omit=dev > reports/sbom.cdx.json
+      - name: Verificar SBOM no vacío
+        run: node scripts/verify-sbom.mjs reports/sbom.cdx.json
+      - name: Publicar reportes SCA y SBOM
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sca-sbom-reports
+          path: reports/
+          if-no-files-found: error
+          retention-days: 7
 
   secret-scan:
     name: Gitleaks - Detección de Secretos
-    needs: static-analysis
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      GITLEAKS_VERSION: '8.30.1'
-      GITLEAKS_SHA256: '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb'
+      GITLEAKS_VERSION: "8.30.1"
+      GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
     steps:
-      - name: Checkout (historial completo)
+      - name: Checkout con historial completo
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
-      - name: Instalar Gitleaks CLI (fijado por versión y checksum SHA256)
+          persist-credentials: false
+      - name: Instalar Gitleaks CLI fijado por versión y checksum
         run: |
           set -euo pipefail
           curl -sSL -o gitleaks.tar.gz \
@@ -90,7 +145,7 @@ jobs:
           echo "${GITLEAKS_SHA256}  gitleaks.tar.gz" | sha256sum -c -
           tar -xzf gitleaks.tar.gz gitleaks
           chmod +x gitleaks
-      - name: Escanear historial completo del repositorio
+      - name: Escanear historial completo con reporte redactado
         run: |
           set -euo pipefail
           ./gitleaks detect \
@@ -99,25 +154,28 @@ jobs:
             --report-format json \
             --report-path gitleaks-report.json \
             -v
-      - name: Subir reporte de Gitleaks como artefacto
+      - name: Publicar reporte Gitleaks obligatorio
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: gitleaks-report
           path: gitleaks-report.json
-          if-no-files-found: ignore
+          if-no-files-found: error
           retention-days: 7
 
   security-scan:
     name: CodeQL - SAST JavaScript y TypeScript
-    needs: static-analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     permissions:
       contents: read
       actions: read
       security-events: write
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Checkout sin credenciales persistentes
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - name: Inicializar CodeQL
         uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
@@ -129,13 +187,26 @@ jobs:
     name: Verificación de Empaquetado (Dry-Run)
     needs: [static-analysis, security-tests]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
+      - name: Checkout sin credenciales persistentes
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          node-version: 20
-          cache: 'npm'
+          persist-credentials: false
+      - name: Preparar Node fijado por .nvmrc
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
       - name: Instalar dependencias con lockfile
         run: npm ci --legacy-peer-deps
-      - name: Expo export dry-run (verificar empaquetado sin firma)
-        run: npx expo export --no-bytecode
+      - name: Expo export dry-run del bundle JavaScript
+        run: npx expo export --platform android --no-bytecode --output-dir dist
+      - name: Confirmar salida del empaquetado JavaScript
+        run: |
+          set -euo pipefail
+          test -d dist
+          test -n "$(find dist -type f -print -quit)"
+          echo "### Empaquetado JavaScript" >> "$GITHUB_STEP_SUMMARY"
+          echo "Expo export generó un bundle JS en dist/." >> "$GITHUB_STEP_SUMMARY"
+          echo "Este check NO acredita un APK ni un AAB Android; el build nativo se verifica en Android Debug Build." >> "$GITHUB_STEP_SUMMARY"

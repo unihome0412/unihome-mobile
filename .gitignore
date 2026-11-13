@@ -8,13 +8,20 @@ node_modules/
 dist/
 web-build/
 
-# Native builds
+# Native builds and generated artifacts
 *.orig.*
 android/
 ios/
+.gradle/
+**/build/
+*.apk
+*.aab
+*.hprof
+bundletool.jar
 
 # Environment files and secrets
 .env
+.env.*
 .env.local
 .env.*.local
 !env.example
@@ -27,15 +34,24 @@ ios/
 *.p12
 *.key
 *.mobileprovision
+keystore.properties
+*.bundle
 
-# Testing and coverage
+# Testing, coverage and reports
 coverage/
 *.lcov
+reports/
+sbom.cdx.json
+release/
+release-manifest.xml
+gitleaks-report.json
+npm-audit*.json
 
 # Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
 
 # System files
 .DS_Store
